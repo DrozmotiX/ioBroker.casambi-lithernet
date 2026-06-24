@@ -1,0 +1,106 @@
+{
+	"common": {
+		"name": "casambi-lithernet",
+		"version": "0.0.1",
+		"news": {
+			"0.0.1": {
+				"en": "initial release",
+				"de": "Erstveröffentlichung",
+				"ru": "Начальная версия",
+				"pt": "lançamento inicial",
+				"nl": "Eerste uitgave",
+				"fr": "Première version",
+				"it": "Versione iniziale",
+				"es": "Versión inicial",
+				"pl": "Pierwsze wydanie",
+				"uk": "Початкова версія",
+				"zh-cn": "首次出版"
+			}
+		},
+		"titleLang": {
+			"en": "Casambi Lithernet",
+			"de": "Casambi Lithernet",
+			"ru": "Касамби Литернет",
+			"pt": "Casambi Liternet",
+			"nl": "Casambi Lithernet",
+			"fr": "Casambi Lithernet",
+			"it": "Casambi Lithernet",
+			"es": "Casambi Lithernet",
+			"pl": "Casambi Lithernet",
+			"uk": "Casambi Lithernet",
+			"zh-cn": "卡萨比·利瑟内特"
+		},
+		"desc": {
+			"en": "ioBroker Lithernet – Casambi allows communication by MQTT protocol with Lithernet–Casambi gateway enabling Ethernet-based integration of the Casambi Bluetooth system into the ioBroker environment. The gateway connects to the local network via Ethernet and communicates with Casambi devices over Bluetooth, allowing for control and monitoring of Casambi-enabled lighting systems through the ioBroker platform.",
+			"de": "ioBroker Lithernet – Casambi ermöglicht die Kommunikation über das MQTT-Protokoll mit dem Lithernet-Casambi-Gateway und ermöglicht die Ethernet-basierte Integration des Casambi-Bluetooth-Systems in die ioBroker-Umgebung. Das Gateway stellt über Ethernet eine Verbindung zum lokalen Netzwerk her und kommuniziert über Bluetooth mit Casambi-Geräten, was die Steuerung und Überwachung von Casambi-fähigen Beleuchtungssystemen über die ioBroker-Plattform ermöglicht.",
+			"ru": "ioBroker Lithernet – Casambi обеспечивает связь по протоколу MQTT со шлюзом Lithernet-Casambi, обеспечивая интеграцию системы Casambi Bluetooth на основе Ethernet в среду ioBroker. Шлюз подключается к локальной сети через Ethernet и обменивается данными с устройствами Casambi через Bluetooth, что позволяет управлять и контролировать системы освещения с поддержкой Casambi через платформу ioBroker.",
+			"pt": "ioBroker Lithernet – Casambi permite a comunicação pelo protocolo MQTT com o gateway Lithernet – Casambi permitindo a integração baseada em Ethernet do sistema Casambi Bluetooth no ambiente ioBroker. O gateway se conecta à rede local via Ethernet e se comunica com os dispositivos Casambi via Bluetooth, permitindo o controle e monitoramento dos sistemas de iluminação habilitados para Casambi por meio da plataforma ioBroker.",
+			"nl": "ioBroker Lithernet – Casambi maakt communicatie mogelijk via het MQTT-protocol met de Lithernet-Casambi-gateway, waardoor op Ethernet gebaseerde integratie van het Casambi Bluetooth-systeem in de ioBroker-omgeving mogelijk is. De gateway maakt via Ethernet verbinding met het lokale netwerk en communiceert met Casambi-apparaten via Bluetooth, waardoor bediening en monitoring van Casambi-compatibele verlichtingssystemen via het ioBroker-platform mogelijk is.",
+			"fr": "ioBroker Lithernet – Casambi permet la communication via le protocole MQTT avec la passerelle Lithernet-Casambi permettant l'intégration basée sur Ethernet du système Bluetooth Casambi dans l'environnement ioBroker. La passerelle se connecte au réseau local via Ethernet et communique avec les appareils Casambi via Bluetooth, permettant le contrôle et la surveillance des systèmes d'éclairage compatibles Casambi via la plateforme ioBroker.",
+			"it": "ioBroker Lithernet – Casambi consente la comunicazione tramite protocollo MQTT con il gateway Lithernet–Casambi consentendo l'integrazione basata su Ethernet del sistema Casambi Bluetooth nell'ambiente ioBroker. Il gateway si connette alla rete locale tramite Ethernet e comunica con i dispositivi Casambi tramite Bluetooth, consentendo il controllo e il monitoraggio dei sistemi di illuminazione abilitati Casambi attraverso la piattaforma ioBroker.",
+			"es": "ioBroker Lithernet – Casambi permite la comunicación mediante el protocolo MQTT con la puerta de enlace Lithernet – Casambi, lo que permite la integración basada en Ethernet del sistema Bluetooth Casambi en el entorno ioBroker. La puerta de enlace se conecta a la red local a través de Ethernet y se comunica con dispositivos Casambi a través de Bluetooth, lo que permite el control y monitoreo de los sistemas de iluminación habilitados para Casambi a través de la plataforma ioBroker.",
+			"pl": "ioBroker Lithernet – Casambi umożliwia komunikację protokołem MQTT z bramką Lithernet – Casambi, umożliwiając integrację systemu Casambi Bluetooth ze środowiskiem ioBroker w oparciu o Ethernet. Bramka łączy się z siecią lokalną poprzez Ethernet i komunikuje się z urządzeniami Casambi poprzez Bluetooth, umożliwiając sterowanie i monitorowanie systemów oświetleniowych obsługujących Casambi za pośrednictwem platformy ioBroker.",
+			"uk": "ioBroker Lithernet – Casambi забезпечує зв’язок за допомогою протоколу MQTT зі шлюзом Lithernet–Casambi, що забезпечує інтеграцію системи Bluetooth Casambi в середовище ioBroker на основі Ethernet. Шлюз підключається до локальної мережі через Ethernet і спілкується з пристроями Casambi через Bluetooth, дозволяючи контролювати та контролювати системи освітлення з підтримкою Casambi через платформу ioBroker.",
+			"zh-cn": "ioBroker Lithernet – Casambi 允许通过 MQTT 协议与 Lithernet –Casambi 网关进行通信，从而实现基于以太网的 Casambi 蓝牙系统集成到 ioBroker 环境中。该网关通过以太网连接到本地网络，并通过蓝牙与 Casambi 设备通信，从而可以通过 ioBroker 平台控制和监控支持 Casambi 的照明系统。"
+		},
+		"authors": ["DutchmanNL <oss@drozmotix.eu>"],
+		"keywords": ["template", "automation", "IoT", "integration"],
+		"licenseInformation": {
+			"type": "free",
+			"license": "MIT"
+		},
+		"platform": "Javascript/Node.js",
+		"icon": "casambi-lithernet.png",
+		"enabled": true,
+		"extIcon": "https://raw.githubusercontent.com/DrozmotiX/ioBroker.casambi-lithernet/main/admin/casambi-lithernet.png",
+		"readme": "https://github.com/DrozmotiX/ioBroker.casambi-lithernet/blob/main/README.md",
+		"loglevel": "info",
+		"tier": 3,
+		"mode": "daemon",
+		"type": "lighting",
+		"compact": true,
+		"connectionType": "local",
+		"dataSource": "push",
+		"adminUI": {
+			"config": "json"
+		},
+		"dependencies": [
+			{
+				"js-controller": ">=6.0.11"
+			}
+		],
+		"globalDependencies": [
+			{
+				"admin": ">=7.0.23"
+			}
+		]
+	},
+	"native": {
+		"option1": true,
+		"option2": "42"
+	},
+	"objects": [],
+	"instanceObjects": [
+		{
+			"_id": "info",
+			"type": "channel",
+			"common": {
+				"name": "Information"
+			},
+			"native": {}
+		},
+		{
+			"_id": "info.connection",
+			"type": "state",
+			"common": {
+				"role": "indicator.connected",
+				"name": "Device or service connected",
+				"type": "boolean",
+				"read": true,
+				"write": false,
+				"def": false
+			},
+			"native": {}
+		}
+	]
+}
