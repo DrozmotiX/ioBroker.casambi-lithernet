@@ -101,6 +101,9 @@ topic. `sensors` and `buttons` are inputs the adapter injects (`Injectable butto
 	### **WORK IN PROGRESS**
 -->
 
+### 0.3.2 (2026-06-25)
+* (DutchmanNL) CI: test on Node.js 22.x/24.x and trim the adapter test matrix to Ubuntu
+
 ### 0.3.1 (2026-06-25)
 Leaner, correct object tree built from the gateway's padded cyclic poll: placeholder slots are no longer created, indices sort naturally, and a plain dimmer only gets the states it needs. Adds an opt-in cleanup of orphaned objects. Derived from a live REV2.5 / fw 4.56 mapping session.
 

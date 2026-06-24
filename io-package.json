@@ -1,8 +1,21 @@
 {
 	"common": {
 		"name": "casambi-lithernet",
-		"version": "0.3.1",
+		"version": "0.3.2",
 		"news": {
+			"0.3.2": {
+				"en": "CI: test on Node.js 22.x/24.x and trim the test matrix to Ubuntu.",
+				"de": "CI: Test mit Node.js 22.x/24.x und Reduzierung der Testmatrix auf Ubuntu.",
+				"ru": "CI: тестирование на Node.js 22.x/24.x и сокращение тестовой матрицы до Ubuntu.",
+				"pt": "CI: testar no Node.js 22.x/24.x e reduzir a matriz de testes para Ubuntu.",
+				"nl": "CI: testen op Node.js 22.x/24.x en de testmatrix beperken tot Ubuntu.",
+				"fr": "CI : test sur Node.js 22.x/24.x et réduction de la matrice de test à Ubuntu.",
+				"it": "CI: test su Node.js 22.x/24.x e riduzione della matrice di test a Ubuntu.",
+				"es": "CI: prueba en Node.js 22.x/24.x y reducción de la matriz de pruebas a Ubuntu.",
+				"pl": "CI: testy na Node.js 22.x/24.x i ograniczenie macierzy testów do Ubuntu.",
+				"uk": "CI: тестування на Node.js 22.x/24.x і скорочення тестової матриці до Ubuntu.",
+				"zh-cn": "CI：在 Node.js 22.x/24.x 上测试，并将测试矩阵精简为 Ubuntu。"
+			},
 			"0.3.1": {
 				"en": "Leaner, correct object tree: placeholder scene/group/device slots are no longer created, indices are zero-padded for natural sorting, and a plain dimmer only gets the states it needs. Adds an opt-in cleanup of orphaned objects.",
 				"de": "Schlankerer, korrekter Objektbaum: Platzhalter-Slots für Szenen/Gruppen/Geräte werden nicht mehr angelegt, Indizes sind für natürliche Sortierung mit Nullen aufgefüllt, und ein einfacher Dimmer erhält nur die benötigten Zustände. Fügt eine optionale Bereinigung verwaister Objekte hinzu.",
