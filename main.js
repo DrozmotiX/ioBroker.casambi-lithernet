@@ -14,6 +14,26 @@ const stateAttr = require('./lib/state_attr.js');
 const CasambiBroker = require('./lib/broker.js');
 const casambi = require('./lib/casambi.js');
 
+/**
+ * Turn a config name table ([{ id, name }, ...]) into an { "<id>": "<name>" } map,
+ * skipping rows without a usable name.
+ *
+ * @param {Array<{id: *, name: string}>|undefined} rows - config table rows
+ * @returns {Object<string, string>} index -> name map
+ */
+function buildNameMap(rows) {
+	/** @type {Object<string, string>} */
+	const map = {};
+	if (Array.isArray(rows)) {
+		for (const row of rows) {
+			if (row && row.id != null && typeof row.name === 'string' && row.name.trim()) {
+				map[String(row.id)] = row.name.trim();
+			}
+		}
+	}
+	return map;
+}
+
 class CasambiLithernet extends utils.Adapter {
 	/**
 	 * @param {Partial<utils.AdapterOptions>} [options] - Adapter options
@@ -30,6 +50,9 @@ class CasambiLithernet extends utils.Adapter {
 			defaultDuration: 0,
 			levelScale: 'percent',
 		});
+		/** @type {{scenes: Object<string,string>, groups: Object<string,string>, devices: Object<string,string>}} */
+		this.names = { scenes: {}, groups: {}, devices: {} };
+		this.hasNames = false;
 
 		this.on('ready', this.onReady.bind(this));
 		this.on('stateChange', this.onStateChange.bind(this));
@@ -54,6 +77,14 @@ class CasambiLithernet extends utils.Adapter {
 			defaultDuration: Number(this.config.defaultDuration) || 0,
 			levelScale: this.config.levelScale === 'raw' ? 'raw' : 'percent',
 		};
+
+		// Friendly channel names from the "Names" config tab (index -> name).
+		this.names = {
+			scenes: buildNameMap(this.config.sceneNames),
+			groups: buildNameMap(this.config.groupNames),
+			devices: buildNameMap(this.config.deviceNames),
+		};
+		this.hasNames = Object.values(this.names).some(map => Object.keys(map).length > 0);
 
 		// Seed the writable/input states so they exist before any feedback arrives:
 		// network-wide broadcast level, injected sensors and virtual buttons.
@@ -105,7 +136,32 @@ class CasambiLithernet extends utils.Adapter {
 			this.log.debug(`Unhandled feedback on ${topic}: ${JSON.stringify(payload)}`);
 			return;
 		}
-		await jsonExplorer.traverseJson(tree, '', false, false, 0);
+		// Inject friendly names so jsonExplorer labels the scene/group/device channels.
+		if (this.hasNames) {
+			this.applyNames(tree);
+		}
+		await jsonExplorer.traverseJson(tree, '', this.hasNames, false, 0);
+	}
+
+	/**
+	 * Add a `name` field to the scene/group/device nodes in a feedback tree, from the
+	 * configured name maps. jsonExplorer (replaceName) then uses it as the channel name.
+	 *
+	 * @param {object} tree - parsed feedback tree (mutated in place)
+	 */
+	applyNames(tree) {
+		const channels = /** @type {Array<'scenes'|'groups'|'devices'>} */ (['scenes', 'groups', 'devices']);
+		for (const channel of channels) {
+			const map = this.names[channel];
+			if (!tree[channel] || !map) {
+				continue;
+			}
+			for (const index of Object.keys(tree[channel])) {
+				if (map[index]) {
+					tree[channel][index].name = map[index];
+				}
+			}
+		}
 	}
 
 	/**

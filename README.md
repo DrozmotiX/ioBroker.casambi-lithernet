@@ -101,6 +101,9 @@ topic. `sensors` and `buttons` are inputs the adapter injects (`Injectable butto
 	### **WORK IN PROGRESS**
 -->
 
+### 0.3.0 (2026-06-24)
+* (DutchmanNL) Added a **Names** config tab — assign friendly names to scenes, groups and devices by number; applied as the channel name (e.g. `devices.12` → "Kitchen Spot")
+
 ### 0.2.0 (2026-06-24)
 * (DutchmanNL) Rewrote the feedback parser for the gateway's real `get/poll_*` topics — live scene/group/device state (level, colour, online, condition, battery) auto-populates
 * (DutchmanNL) Whole-network `broadcast` control (`set/level`) replaces the previous `control.*` channel

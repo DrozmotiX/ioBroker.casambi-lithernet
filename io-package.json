@@ -1,8 +1,21 @@
 {
 	"common": {
 		"name": "casambi-lithernet",
-		"version": "0.2.0",
+		"version": "0.3.0",
 		"news": {
+			"0.3.0": {
+				"en": "Added a Names config tab to assign friendly names to scenes, groups and devices (applied as channel names)",
+				"de": "Es wurde eine Konfigurationsregisterkarte „Namen“ hinzugefügt, um Szenen, Gruppen und Geräten benutzerfreundliche Namen zuzuweisen (die als Kanalnamen angewendet werden).",
+				"ru": "Добавлена ​​вкладка конфигурации «Имена», позволяющая назначать понятные имена сценам, группам и устройствам (применяются как имена каналов).",
+				"pt": "Adicionada uma guia de configuração de Nomes para atribuir nomes amigáveis ​​a cenas, grupos e dispositivos (aplicados como nomes de canais)",
+				"nl": "Een tabblad Namenconfiguratie toegevoegd om beschrijvende namen toe te wijzen aan scènes, groepen en apparaten (toegepast als kanaalnamen)",
+				"fr": "Ajout d'un onglet de configuration Noms pour attribuer des noms conviviaux aux scènes, groupes et appareils (appliqués comme noms de canaux)",
+				"it": "Aggiunta una scheda di configurazione Nomi per assegnare nomi descrittivi a scene, gruppi e dispositivi (applicati come nomi di canale)",
+				"es": "Se agregó una pestaña de configuración de Nombres para asignar nombres descriptivos a escenas, grupos y dispositivos (aplicados como nombres de canales)",
+				"pl": "Dodano zakładkę konfiguracyjną Nazwy, w której można przypisywać przyjazne nazwy scenom, grupom i urządzeniom (stosowane jako nazwy kanałów)",
+				"uk": "Додано вкладку конфігурації імен для призначення зрозумілих імен сценам, групам і пристроям (застосовуються як імена каналів)",
+				"zh-cn": "添加了名称配置选项卡，为场景、组和设备分配友好名称（用作通道名称）"
+			},
 			"0.2.0": {
 				"en": "Real gateway protocol: live scene/group/device state from poll_* feedback (level, colour, online, condition, battery) and whole-network broadcast control",
 				"de": "Echtes Gateway-Protokoll: Live-Szenen-/Gruppen-/Gerätestatus aus Poll_*-Feedback (Pegel, Farbe, Online, Zustand, Batterie) und Broadcast-Steuerung im gesamten Netzwerk",
@@ -125,7 +138,10 @@
 		"password": "",
 		"defaultDuration": 0,
 		"levelScale": "percent",
-		"buttonCount": 0
+		"buttonCount": 0,
+		"sceneNames": [],
+		"groupNames": [],
+		"deviceNames": []
 	},
 	"objects": [],
 	"instanceObjects": [

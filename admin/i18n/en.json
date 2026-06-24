@@ -14,5 +14,15 @@
 	"Percent (0-100 %)": "Percent (0-100 %)",
 	"Raw (0-254)": "Raw (0-254)",
 	"Injectable buttons": "Injectable buttons",
-	"Number of virtual buttons to create for injecting press/release events into Casambi (0 = none)": "Number of virtual buttons to create for injecting press/release events into Casambi (0 = none)"
+	"Number of virtual buttons to create for injecting press/release events into Casambi (0 = none)": "Number of virtual buttons to create for injecting press/release events into Casambi (0 = none)",
+	"Settings": "Settings",
+	"Names": "Names",
+	"Assign friendly names to scenes, groups and devices by their number (as shown in the Casambi app). Names are applied as the channel name in objects, e.g. devices.12 -> \"Kitchen Spot\". Leave empty to keep the number.": "Assign friendly names to scenes, groups and devices by their number (as shown in the Casambi app). Names are applied as the channel name in objects, e.g. devices.12 -> \"Kitchen Spot\". Leave empty to keep the number.",
+	"Scenes": "Scenes",
+	"Groups": "Groups",
+	"Devices": "Devices",
+	"Scene #": "Scene #",
+	"Group #": "Group #",
+	"Device #": "Device #",
+	"Name": "Name"
 }
