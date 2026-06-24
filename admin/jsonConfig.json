@@ -84,6 +84,29 @@
 					"min": 0,
 					"max": 255,
 					"xs": 12, "sm": 12, "md": 6, "lg": 4, "xl": 4
+				},
+				"_maintenanceHeader": {
+					"type": "header",
+					"size": 2,
+					"text": "Maintenance",
+					"newLine": true,
+					"xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12
+				},
+				"removeOrphans": {
+					"type": "checkbox",
+					"label": "Remove orphaned objects",
+					"help": "After a full poll cycle on start, delete scene/group/device objects that no longer exist on the gateway (e.g. a scene deleted in the Casambi app). Off = orphans are kept.",
+					"newLine": true,
+					"xs": 12, "sm": 12, "md": 6, "lg": 6, "xl": 6
+				},
+				"orphanScanDelay": {
+					"type": "number",
+					"label": "Cleanup scan delay (s)",
+					"help": "How long to collect feedback before the cleanup runs - must exceed one full poll cycle so nothing real is missed.",
+					"min": 30,
+					"max": 1800,
+					"hidden": "!data.removeOrphans",
+					"xs": 12, "sm": 12, "md": 6, "lg": 4, "xl": 4
 				}
 			}
 		},

@@ -139,6 +139,8 @@
 		"defaultDuration": 0,
 		"levelScale": "percent",
 		"buttonCount": 0,
+		"removeOrphans": false,
+		"orphanScanDelay": 120,
 		"sceneNames": [],
 		"groupNames": [],
 		"deviceNames": []

@@ -56,6 +56,14 @@ class CasambiLithernet extends utils.Adapter {
 		// Padded indices of device slots known to be empty placeholders (node_type 0); their
 		// values messages are ignored so phantom devices.<n> are not created.
 		this.placeholderDevices = /** @type {Set<string>} */ (new Set());
+		// Padded indices actually seen in gateway feedback this run, per channel - used by the
+		// optional orphan cleanup to delete objects whose entity no longer exists.
+		this.seen = {
+			devices: /** @type {Set<string>} */ (new Set()),
+			scenes: /** @type {Set<string>} */ (new Set()),
+			groups: /** @type {Set<string>} */ (new Set()),
+		};
+		this.orphanTimer = /** @type {ioBroker.Timeout | undefined} */ (undefined);
 
 		this.on('ready', this.onReady.bind(this));
 		this.on('stateChange', this.onStateChange.bind(this));
@@ -129,6 +137,17 @@ class CasambiLithernet extends utils.Adapter {
 		this.log.info(
 			`Ready - point the gateway's MQTT client at this host:${port}, topic prefix "casambi/${gatewayId}/" (no SSL).`,
 		);
+
+		// Optional orphan cleanup: after enough time to capture a full poll cycle, delete
+		// scene/group/device objects whose entity no longer exists on the gateway.
+		if (this.config.removeOrphans) {
+			const delayMs = Math.max(30, Number(this.config.orphanScanDelay) || 120) * 1000;
+			this.orphanTimer = this.setTimeout(() => {
+				this.orphanTimer = undefined;
+				this.reconcileOrphans();
+			}, delayMs);
+			this.log.debug(`Orphan cleanup scheduled in ${delayMs / 1000}s.`);
+		}
 	}
 
 	/**
@@ -174,6 +193,15 @@ class CasambiLithernet extends utils.Adapter {
 			this.log.silly(`Ignored feedback on ${topic}: ${JSON.stringify(payload)}`);
 			return;
 		}
+		// Remember which scene/group/device indices actually exist (for orphan cleanup).
+		for (const channel of /** @type {Array<'devices'|'scenes'|'groups'>} */ (['devices', 'scenes', 'groups'])) {
+			if (tree[channel]) {
+				for (const index of Object.keys(tree[channel])) {
+					this.seen[channel].add(index);
+				}
+			}
+		}
+
 		// Inject friendly names so jsonExplorer labels the scene/group/device channels.
 		if (this.hasNames) {
 			this.applyNames(tree);
@@ -192,6 +220,53 @@ class CasambiLithernet extends utils.Adapter {
 			await this.delObjectAsync(`devices.${index}`, { recursive: true });
 		} catch (error) {
 			this.log.debug(`removeDeviceTree(${index}): ${error.message}`);
+		}
+	}
+
+	/**
+	 * Optional orphan cleanup (opt-in via config). After a full poll cycle has been captured,
+	 * delete scene/group/device objects whose index was not seen in the gateway's feedback -
+	 * i.e. the scene/group/device no longer exists. Mirrors the object-view reconcile pattern
+	 * used in oikos-connect. Skipped if no feedback was received (gateway offline) so a dead
+	 * connection can never wipe the tree.
+	 *
+	 * @returns {Promise<void>}
+	 */
+	async reconcileOrphans() {
+		const seenTotal = this.seen.devices.size + this.seen.scenes.size + this.seen.groups.size;
+		if (seenTotal === 0) {
+			this.log.warn('Orphan cleanup skipped: no gateway feedback received yet (gateway offline?).');
+			return;
+		}
+		try {
+			const objects = await this.getAdapterObjectsAsync();
+			const prefix = `${this.namespace}.`;
+			const channels = /** @type {Array<'devices'|'scenes'|'groups'>} */ (['devices', 'scenes', 'groups']);
+			const removed = [];
+			const handled = new Set();
+			for (const fullId of Object.keys(objects)) {
+				const rel = fullId.slice(prefix.length).split('.');
+				const channel = /** @type {'devices'|'scenes'|'groups'} */ (rel[0]);
+				if (rel.length >= 2 && channels.includes(channel)) {
+					const channelId = `${channel}.${rel[1]}`;
+					if (!handled.has(channelId)) {
+						handled.add(channelId);
+						if (!this.seen[channel].has(rel[1])) {
+							removed.push(channelId);
+							await this.delObjectAsync(channelId, { recursive: true });
+						}
+					}
+				}
+			}
+			if (removed.length) {
+				this.log.info(
+					`Orphan cleanup removed ${removed.length} object(s) no longer on the gateway: ${removed.join(', ')}`,
+				);
+			} else {
+				this.log.debug('Orphan cleanup: nothing to remove.');
+			}
+		} catch (error) {
+			this.log.warn(`Orphan cleanup failed: ${error.message}`);
 		}
 	}
 
@@ -306,6 +381,10 @@ class CasambiLithernet extends utils.Adapter {
 	 */
 	async onUnload(callback) {
 		try {
+			if (this.orphanTimer) {
+				this.clearTimeout(this.orphanTimer);
+				this.orphanTimer = undefined;
+			}
 			if (this.broker) {
 				await this.broker.stop();
 				this.broker = null;
