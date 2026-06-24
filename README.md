@@ -97,6 +97,7 @@ set with the **Injectable buttons** option (0 = none).
 
 ### 0.1.0 (2026-06-24)
 * (DutchmanNL) Initial release: embedded MQTT broker, scene/group/device discovery, gateway/scene/group control, lux/PIR/button injection
+* (DutchmanNL) Added "Log all incoming MQTT messages" option for setup/diagnostics
 
 ## License
 MIT License

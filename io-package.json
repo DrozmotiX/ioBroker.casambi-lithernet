@@ -99,7 +99,8 @@
 		"password": "",
 		"defaultDuration": 0,
 		"levelScale": "percent",
-		"buttonCount": 0
+		"buttonCount": 0,
+		"logAllMessages": false
 	},
 	"objects": [],
 	"instanceObjects": [

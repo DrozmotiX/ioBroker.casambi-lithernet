@@ -5,6 +5,7 @@
 	"Gateway ID (topic segment)": "Identyfikator bramy (segment tematu)",
 	"Injectable buttons": "Wstrzykiwalne przyciski",
 	"Listen address": "Posłuchaj adresu",
+	"Log all incoming MQTT messages": "Rejestruj wszystkie przychodzące wiadomości MQTT",
 	"MQTT broker": "Broker MQTT",
 	"Number of virtual buttons to create for injecting press/release events into Casambi (0 = none)": "Liczba wirtualnych przycisków do utworzenia w celu wstrzykiwania wydarzeń związanych z naciśnięciem/wypuszczeniem do Casambi (0 = brak)",
 	"Password (optional)": "Hasło (opcjonalnie)",
@@ -14,5 +15,6 @@
 	"The <deviceId> set in the gateway web UI; topics are casambi/<id>/...": "<deviceId> ustawiony w interfejsie WWW bramy; tematy to casambi/<id>/...",
 	"This adapter runs its own MQTT broker. Point the Lithernet Casambi gateway's MQTT client at this host and port. SSL is not supported by the gateway - use a trusted network.": "Ten adapter obsługuje własnego brokera MQTT. Skieruj klienta MQTT bramy Lithernet Casambi na ten host i port. Bramka nie obsługuje protokołu SSL – skorzystaj z zaufanej sieci.",
 	"Username (optional)": "Nazwa użytkownika (opcjonalnie)",
+	"Write every message received from the gateway to the adapter log (info level). Useful for setup/diagnostics; disable in normal operation.": "Zapisz każdy komunikat otrzymany z bramy w dzienniku adaptera (poziom informacyjny). Przydatne do konfiguracji/diagnostyki; wyłączyć podczas normalnej pracy.",
 	"casambi-lithernet adapter settings": "Ustawienia adaptera dla casambi-lithernet"
 }

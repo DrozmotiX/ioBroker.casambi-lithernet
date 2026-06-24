@@ -73,7 +73,13 @@ class CasambiLithernet extends utils.Adapter {
 		// Start the embedded MQTT broker.
 		this.broker = new CasambiBroker(
 			this,
-			{ bind, port, username: this.config.username || '', password: this.config.password || '' },
+			{
+				bind,
+				port,
+				username: this.config.username || '',
+				password: this.config.password || '',
+				logAllMessages: !!this.config.logAllMessages,
+			},
 			(topic, payload) => this.handleFeedback(topic, payload),
 		);
 

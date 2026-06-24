@@ -66,6 +66,17 @@
 			"lg": 4,
 			"xl": 4
 		},
+		"logAllMessages": {
+			"type": "checkbox",
+			"label": "Log all incoming MQTT messages",
+			"help": "Write every message received from the gateway to the adapter log (info level). Useful for setup/diagnostics; disable in normal operation.",
+			"newLine": true,
+			"xs": 12,
+			"sm": 12,
+			"md": 12,
+			"lg": 8,
+			"xl": 8
+		},
 		"_gatewayHeader": {
 			"type": "header",
 			"size": 2,
