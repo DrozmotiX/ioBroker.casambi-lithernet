@@ -1,9 +1,74 @@
 {
 	"common": {
 		"name": "casambi-lithernet",
-		"version": "0.0.1",
+		"version": "0.3.2",
 		"news": {
-			"0.0.1": {
+			"0.3.2": {
+				"en": "CI: test on Node.js 22.x/24.x and trim the test matrix to Ubuntu.",
+				"de": "CI: Test mit Node.js 22.x/24.x und Reduzierung der Testmatrix auf Ubuntu.",
+				"ru": "CI: тестирование на Node.js 22.x/24.x и сокращение тестовой матрицы до Ubuntu.",
+				"pt": "CI: testar no Node.js 22.x/24.x e reduzir a matriz de testes para Ubuntu.",
+				"nl": "CI: testen op Node.js 22.x/24.x en de testmatrix beperken tot Ubuntu.",
+				"fr": "CI : test sur Node.js 22.x/24.x et réduction de la matrice de test à Ubuntu.",
+				"it": "CI: test su Node.js 22.x/24.x e riduzione della matrice di test a Ubuntu.",
+				"es": "CI: prueba en Node.js 22.x/24.x y reducción de la matriz de pruebas a Ubuntu.",
+				"pl": "CI: testy na Node.js 22.x/24.x i ograniczenie macierzy testów do Ubuntu.",
+				"uk": "CI: тестування на Node.js 22.x/24.x і скорочення тестової матриці до Ubuntu.",
+				"zh-cn": "CI：在 Node.js 22.x/24.x 上测试，并将测试矩阵精简为 Ubuntu。"
+			},
+			"0.3.1": {
+				"en": "Leaner, correct object tree: placeholder scene/group/device slots are no longer created, indices are zero-padded for natural sorting, and a plain dimmer only gets the states it needs. Adds an opt-in cleanup of orphaned objects.",
+				"de": "Schlankerer, korrekter Objektbaum: Platzhalter-Slots für Szenen/Gruppen/Geräte werden nicht mehr angelegt, Indizes sind für natürliche Sortierung mit Nullen aufgefüllt, und ein einfacher Dimmer erhält nur die benötigten Zustände. Fügt eine optionale Bereinigung verwaister Objekte hinzu.",
+				"ru": "Более компактное и корректное дерево объектов: пустые слоты сцен/групп/устройств больше не создаются, индексы дополнены нулями для естественной сортировки, а обычный диммер получает только нужные состояния. Добавлена необязательная очистка осиротевших объектов.",
+				"pt": "Árvore de objetos mais enxuta e correta: slots de cena/grupo/dispositivo de espaço reservado não são mais criados, os índices são preenchidos com zeros para ordenação natural e um dimmer simples recebe apenas os estados necessários. Adiciona uma limpeza opcional de objetos órfãos.",
+				"nl": "Slankere, correcte objectstructuur: lege scène-/groep-/apparaatslots worden niet meer aangemaakt, indices zijn met nullen aangevuld voor natuurlijke sortering en een gewone dimmer krijgt alleen de benodigde statussen. Voegt een optionele opschoning van verweesde objecten toe.",
+				"fr": "Arborescence d'objets plus légère et correcte : les emplacements de scène/groupe/appareil de remplacement ne sont plus créés, les index sont complétés par des zéros pour un tri naturel et un simple variateur n'obtient que les états nécessaires. Ajoute un nettoyage facultatif des objets orphelins.",
+				"it": "Albero degli oggetti più snello e corretto: gli slot segnaposto di scene/gruppi/dispositivi non vengono più creati, gli indici sono riempiti con zeri per l'ordinamento naturale e un semplice dimmer ottiene solo gli stati necessari. Aggiunge una pulizia facoltativa degli oggetti orfani.",
+				"es": "Árbol de objetos más ligero y correcto: ya no se crean ranuras de marcador de posición de escena/grupo/dispositivo, los índices se rellenan con ceros para una ordenación natural y un atenuador simple solo obtiene los estados que necesita. Añade una limpieza opcional de objetos huérfanos.",
+				"pl": "Szczuplejsze, poprawne drzewo obiektów: zastępcze sloty scen/grup/urządzeń nie są już tworzone, indeksy są uzupełniane zerami dla naturalnego sortowania, a zwykły ściemniacz otrzymuje tylko potrzebne stany. Dodaje opcjonalne czyszczenie osieroconych obiektów.",
+				"uk": "Стрункіше, коректне дерево об'єктів: порожні слоти сцен/груп/пристроїв більше не створюються, індекси доповнено нулями для природного сортування, а звичайний димер отримує лише потрібні стани. Додано необов'язкове очищення осиротілих об'єктів.",
+				"zh-cn": "更精简、正确的对象树：不再创建占位的场景/组/设备槽位，索引以零填充以实现自然排序，普通调光器仅获得所需的状态。新增可选的孤立对象清理功能。"
+			},
+			"0.3.0": {
+				"en": "Added a Names config tab to assign friendly names to scenes, groups and devices (applied as channel names)",
+				"de": "Es wurde eine Konfigurationsregisterkarte „Namen“ hinzugefügt, um Szenen, Gruppen und Geräten benutzerfreundliche Namen zuzuweisen (die als Kanalnamen angewendet werden).",
+				"ru": "Добавлена ​​вкладка конфигурации «Имена», позволяющая назначать понятные имена сценам, группам и устройствам (применяются как имена каналов).",
+				"pt": "Adicionada uma guia de configuração de Nomes para atribuir nomes amigáveis ​​a cenas, grupos e dispositivos (aplicados como nomes de canais)",
+				"nl": "Een tabblad Namenconfiguratie toegevoegd om beschrijvende namen toe te wijzen aan scènes, groepen en apparaten (toegepast als kanaalnamen)",
+				"fr": "Ajout d'un onglet de configuration Noms pour attribuer des noms conviviaux aux scènes, groupes et appareils (appliqués comme noms de canaux)",
+				"it": "Aggiunta una scheda di configurazione Nomi per assegnare nomi descrittivi a scene, gruppi e dispositivi (applicati come nomi di canale)",
+				"es": "Se agregó una pestaña de configuración de Nombres para asignar nombres descriptivos a escenas, grupos y dispositivos (aplicados como nombres de canales)",
+				"pl": "Dodano zakładkę konfiguracyjną Nazwy, w której można przypisywać przyjazne nazwy scenom, grupom i urządzeniom (stosowane jako nazwy kanałów)",
+				"uk": "Додано вкладку конфігурації імен для призначення зрозумілих імен сценам, групам і пристроям (застосовуються як імена каналів)",
+				"zh-cn": "添加了名称配置选项卡，为场景、组和设备分配友好名称（用作通道名称）"
+			},
+			"0.2.0": {
+				"en": "Real gateway protocol: live scene/group/device state from poll_* feedback (level, colour, online, condition, battery) and whole-network broadcast control",
+				"de": "Echtes Gateway-Protokoll: Live-Szenen-/Gruppen-/Gerätestatus aus Poll_*-Feedback (Pegel, Farbe, Online, Zustand, Batterie) und Broadcast-Steuerung im gesamten Netzwerk",
+				"ru": "Протокол реального шлюза: состояние сцены/группы/устройства в реальном времени на основе обратной связи poll_* (уровень, цвет, онлайн, состояние, батарея) и управление трансляцией по всей сети",
+				"pt": "Protocolo de gateway real: cena ao vivo/grupo/estado do dispositivo a partir de feedback poll_* (nível, cor, on-line, condição, bateria) e controle de transmissão de toda a rede",
+				"nl": "Real gateway-protocol: live scène/groep/apparaatstatus via poll_* feedback (niveau, kleur, online, conditie, batterij) en uitzendingscontrole over het hele netwerk",
+				"fr": "Véritable protocole de passerelle : état en direct de la scène/du groupe/de l'appareil à partir des commentaires poll_* (niveau, couleur, en ligne, état, batterie) et contrôle de diffusion sur l'ensemble du réseau",
+				"it": "Protocollo gateway reale: stato di scena/gruppo/dispositivo live dal feedback poll_* (livello, colore, online, condizione, batteria) e controllo della trasmissione dell'intera rete",
+				"es": "Protocolo de puerta de enlace real: escena en vivo/grupo/estado del dispositivo a partir de comentarios de poll_* (nivel, color, en línea, condición, batería) y control de transmisión de toda la red",
+				"pl": "Prawdziwy protokół bramy: stan sceny/grupy/urządzenia na żywo na podstawie opinii poll_* (poziom, kolor, online, stan, bateria) i kontrola transmisji w całej sieci",
+				"uk": "Справжній протокол шлюзу: стан сцени/групи/пристрою в прямому ефірі на основі відгуків poll_* (рівень, колір, онлайн, стан, акумулятор) і керування трансляцією всієї мережі",
+				"zh-cn": "真实网关协议：poll_*反馈的现场场景/组/设备状态（电平、颜色、在线、状态、电池）和全网广播控制"
+			},
+			"0.1.1": {
+				"en": "Added option to log all incoming MQTT messages for setup and diagnostics",
+				"de": "Option hinzugefügt, um alle eingehenden MQTT-Nachrichten für Einrichtung und Diagnose zu protokollieren",
+				"ru": "Добавлена ​​возможность протоколировать все входящие сообщения MQTT для настройки и диагностики.",
+				"pt": "Adicionada opção para registrar todas as mensagens MQTT recebidas para configuração e diagnóstico",
+				"nl": "Optie toegevoegd om alle inkomende MQTT-berichten te loggen voor installatie en diagnostiek",
+				"fr": "Option ajoutée pour enregistrer tous les messages MQTT entrants pour la configuration et les diagnostics",
+				"it": "Aggiunta un'opzione per registrare tutti i messaggi MQTT in entrata per la configurazione e la diagnostica",
+				"es": "Opción agregada para registrar todos los mensajes MQTT entrantes para configuración y diagnóstico.",
+				"pl": "Dodano opcję rejestrowania wszystkich przychodzących komunikatów MQTT w celu konfiguracji i diagnostyki",
+				"uk": "Додана опція для реєстрації всіх вхідних повідомлень MQTT для налаштування та діагностики",
+				"zh-cn": "添加了用于记录所有传入 MQTT 消息以进行设置和诊断的选项"
+			},
+			"0.1.0": {
 				"en": "initial release",
 				"de": "Erstveröffentlichung",
 				"ru": "Начальная версия",
@@ -43,8 +108,18 @@
 			"uk": "ioBroker Lithernet – Casambi забезпечує зв’язок за допомогою протоколу MQTT зі шлюзом Lithernet–Casambi, що забезпечує інтеграцію системи Bluetooth Casambi в середовище ioBroker на основі Ethernet. Шлюз підключається до локальної мережі через Ethernet і спілкується з пристроями Casambi через Bluetooth, дозволяючи контролювати та контролювати системи освітлення з підтримкою Casambi через платформу ioBroker.",
 			"zh-cn": "ioBroker Lithernet – Casambi 允许通过 MQTT 协议与 Lithernet –Casambi 网关进行通信，从而实现基于以太网的 Casambi 蓝牙系统集成到 ioBroker 环境中。该网关通过以太网连接到本地网络，并通过蓝牙与 Casambi 设备通信，从而可以通过 ioBroker 平台控制和监控支持 Casambi 的照明系统。"
 		},
-		"authors": ["DutchmanNL <oss@drozmotix.eu>"],
-		"keywords": ["template", "automation", "IoT", "integration"],
+		"authors": [
+			"DutchmanNL <oss@drozmotix.eu>"
+		],
+		"keywords": [
+			"casambi",
+			"lithernet",
+			"mqtt",
+			"lighting",
+			"bluetooth",
+			"automation",
+			"IoT"
+		],
 		"licenseInformation": {
 			"type": "free",
 			"license": "MIT"
@@ -75,9 +150,26 @@
 			}
 		]
 	},
+	"encryptedNative": [
+		"password"
+	],
+	"protectedNative": [
+		"password"
+	],
 	"native": {
-		"option1": true,
-		"option2": "42"
+		"bind": "0.0.0.0",
+		"port": 3791,
+		"gatewayId": "0",
+		"username": "",
+		"password": "",
+		"defaultDuration": 0,
+		"levelScale": "percent",
+		"buttonCount": 0,
+		"removeOrphans": false,
+		"orphanScanDelay": 120,
+		"sceneNames": [],
+		"groupNames": [],
+		"deviceNames": []
 	},
 	"objects": [],
 	"instanceObjects": [

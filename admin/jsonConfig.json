@@ -1,26 +1,154 @@
 {
 	"i18n": true,
-	"type": "panel",
+	"type": "tabs",
 	"items": {
-		"option1": {
-			"type": "checkbox",
-			"label": "option1",
-			"newLine": true,
-			"xs": 12,
-			"sm": 12,
-			"md": 6,
-			"lg": 4,
-			"xl": 4
+		"settings": {
+			"type": "panel",
+			"label": "Settings",
+			"items": {
+				"_brokerHeader": {
+					"type": "header",
+					"size": 2,
+					"text": "MQTT broker",
+					"newLine": true,
+					"xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12
+				},
+				"_brokerHint": {
+					"type": "staticText",
+					"text": "This adapter runs its own MQTT broker. Point the Lithernet Casambi gateway's MQTT client at this host and port. SSL is not supported by the gateway - use a trusted network.",
+					"newLine": true,
+					"xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12
+				},
+				"bind": {
+					"type": "ip",
+					"label": "Listen address",
+					"listenOnAllPorts": true,
+					"onlyIp4": true,
+					"newLine": true,
+					"xs": 12, "sm": 12, "md": 6, "lg": 4, "xl": 4
+				},
+				"port": {
+					"type": "number",
+					"label": "Port",
+					"min": 1,
+					"max": 65535,
+					"xs": 12, "sm": 12, "md": 6, "lg": 4, "xl": 4
+				},
+				"username": {
+					"type": "text",
+					"label": "Username (optional)",
+					"newLine": true,
+					"xs": 12, "sm": 12, "md": 6, "lg": 4, "xl": 4
+				},
+				"password": {
+					"type": "password",
+					"label": "Password (optional)",
+					"visible": true,
+					"xs": 12, "sm": 12, "md": 6, "lg": 4, "xl": 4
+				},
+				"_gatewayHeader": {
+					"type": "header",
+					"size": 2,
+					"text": "Gateway",
+					"newLine": true,
+					"xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12
+				},
+				"gatewayId": {
+					"type": "text",
+					"label": "Gateway ID (topic segment)",
+					"help": "The <deviceId> set in the gateway web UI; topics are casambi/<id>/...",
+					"newLine": true,
+					"xs": 12, "sm": 12, "md": 6, "lg": 4, "xl": 4
+				},
+				"defaultDuration": {
+					"type": "number",
+					"label": "Default fade duration (ms)",
+					"min": 0,
+					"max": 600000,
+					"xs": 12, "sm": 12, "md": 6, "lg": 4, "xl": 4
+				},
+				"levelScale": {
+					"type": "select",
+					"label": "Dimmer level scale",
+					"newLine": true,
+					"options": [
+						{ "label": "Percent (0-100 %)", "value": "percent" },
+						{ "label": "Raw (0-254)", "value": "raw" }
+					],
+					"xs": 12, "sm": 12, "md": 6, "lg": 4, "xl": 4
+				},
+				"buttonCount": {
+					"type": "number",
+					"label": "Injectable buttons",
+					"help": "Number of virtual buttons to create for injecting press/release events into Casambi (0 = none)",
+					"min": 0,
+					"max": 255,
+					"xs": 12, "sm": 12, "md": 6, "lg": 4, "xl": 4
+				},
+				"_maintenanceHeader": {
+					"type": "header",
+					"size": 2,
+					"text": "Maintenance",
+					"newLine": true,
+					"xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12
+				},
+				"removeOrphans": {
+					"type": "checkbox",
+					"label": "Remove orphaned objects",
+					"help": "After a full poll cycle on start, delete scene/group/device objects that no longer exist on the gateway (e.g. a scene deleted in the Casambi app). Off = orphans are kept.",
+					"newLine": true,
+					"xs": 12, "sm": 12, "md": 6, "lg": 6, "xl": 6
+				},
+				"orphanScanDelay": {
+					"type": "number",
+					"label": "Cleanup scan delay (s)",
+					"help": "How long to collect feedback before the cleanup runs - must exceed one full poll cycle so nothing real is missed.",
+					"min": 30,
+					"max": 1800,
+					"hidden": "!data.removeOrphans",
+					"xs": 12, "sm": 12, "md": 6, "lg": 4, "xl": 4
+				}
+			}
 		},
-		"option2": {
-			"type": "text",
-			"label": "option2",
-			"newLine": true,
-			"xs": 12,
-			"sm": 12,
-			"md": 6,
-			"lg": 4,
-			"xl": 4
+		"names": {
+			"type": "panel",
+			"label": "Names",
+			"items": {
+				"_namesHint": {
+					"type": "staticText",
+					"text": "Assign friendly names to scenes, groups and devices by their number (as shown in the Casambi app). Names are applied as the channel name in objects, e.g. devices.12 -> \"Kitchen Spot\". Leave empty to keep the number.",
+					"newLine": true,
+					"xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12
+				},
+				"sceneNames": {
+					"type": "table",
+					"label": "Scenes",
+					"newLine": true,
+					"items": [
+						{ "type": "number", "attr": "id", "title": "Scene #", "width": "30%" },
+						{ "type": "text", "attr": "name", "title": "Name", "width": "70%" }
+					],
+					"xs": 12, "sm": 12, "md": 4, "lg": 4, "xl": 4
+				},
+				"groupNames": {
+					"type": "table",
+					"label": "Groups",
+					"items": [
+						{ "type": "number", "attr": "id", "title": "Group #", "width": "30%" },
+						{ "type": "text", "attr": "name", "title": "Name", "width": "70%" }
+					],
+					"xs": 12, "sm": 12, "md": 4, "lg": 4, "xl": 4
+				},
+				"deviceNames": {
+					"type": "table",
+					"label": "Devices",
+					"items": [
+						{ "type": "number", "attr": "id", "title": "Device #", "width": "30%" },
+						{ "type": "text", "attr": "name", "title": "Name", "width": "70%" }
+					],
+					"xs": 12, "sm": 12, "md": 4, "lg": 4, "xl": 4
+				}
+			}
 		}
 	}
 }
