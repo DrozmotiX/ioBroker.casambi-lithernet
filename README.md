@@ -101,6 +101,11 @@ topic. `sensors` and `buttons` are inputs the adapter injects (`Injectable butto
 	### **WORK IN PROGRESS**
 -->
 
+### **WORK IN PROGRESS**
+* (DutchmanNL) Scene/group/device/button indices are now **zero-padded** (`devices.001`) so they sort naturally in admin; legacy unpadded objects are cleaned up automatically on first start
+* (DutchmanNL) **Placeholder slots are skipped** — unconfigured scenes/groups (level 255 sentinel; verified live: real scenes max at 254, an `active` scene is never dropped) and empty device slots (`node_type` 0) no longer create phantom states; honours `node_deleted`
+* (DutchmanNL) **Capability-gated states** — a plain dimmer only gets `level`/`last_level`/`scene` + health; colour/cct/battery states are created only once a device actually reports them (live-validated: 12 luminaires, 25 scenes, no per-device set topic exists)
+
 ### 0.3.0 (2026-06-24)
 * (DutchmanNL) Added a **Names** config tab — assign friendly names to scenes, groups and devices by number; applied as the channel name (e.g. `devices.12` → "Kitchen Spot")
 

@@ -30,12 +30,27 @@ REV2.5 / fw 4.56 gateway. Lint/type/test green.
       creates many empty states and slows the poll cycle. Set them to the site's real totals
       (21 scenes + actual group/device counts) in the gateway Wizard.
 
+## Live simulation 2026-06-24 — outcomes (see `docs/simulation-findings-2026-06-24.md`)
+
+- Full findings + detection rules: **`docs/simulation-findings-2026-06-24.md`** (13.6k msgs captured).
+- **Latency:** poll cycle ≈ 22.4s steady; actuation near-instant (1.5–2.8s to first feedback);
+  the 0–22.4s lag is poll-phase, not device response.
+- **Per-device control = conclusively NONE** — 7 topic candidates failed; gateway exposes only
+  broadcast/scene/group setters. Devices are monitoring-only (resolves the P1 item below).
+- **Site reality:** 12 live luminaires (1,2,3,9,10,12,16,17,18,19,20,21); 25 scenes at
+  non-contiguous IDs (1–21,28,48,49,54); dev 4/5/6/11 are likely input/switch/sensor nodes
+  (online, never carry a level, not in any scene, ignore broadcast).
+- **NEXT (deferred, adapter-side):** filter empty slots in the adapter (gateway poll counts left
+  as-is) using the detection rules in the findings doc — `node_type!=0` for real devices,
+  `poll_scene.level!=255` for configured scenes, per-device `scene` field for membership.
+
 ## P1 — capability gaps
 
-- [ ] **Per-device control** — the whitepaper lists "Device" as a settable target, but we only
-      found broadcast/scene/group `set` topics. Probe for the per-device set topic (e.g.
-      `set/device_level` / a `unit`/`id` field) so individual lights are controllable, then make
-      `devices.<n>.level` writable. Until then devices are monitoring-only.
+- [x] **Per-device control** — RESOLVED (negative): no per-device set topic exists. 7 candidates
+      probed live (`set/device_level` with device/id, `set/unit_level`, `set/node_level`,
+      path-based `set/device_level/1` & `set/device/1`; `set/level {device}` just broadcasts).
+      Gateway supports only broadcast/scene/group. Individual lights → use a single-member
+      scene/group, or the Casambi Cloud WebSocket API (P3). `devices.<n>` stays read-only.
 - [ ] **Colour control** — whitepaper mentions setting colour temperature and colour; only
       `level` is wired today. Add CCT / RGB set commands + writable states.
 - [ ] **`node_deleted` handling** — currently ignored; optionally delete the corresponding

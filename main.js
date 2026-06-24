@@ -53,6 +53,9 @@ class CasambiLithernet extends utils.Adapter {
 		/** @type {{scenes: Object<string,string>, groups: Object<string,string>, devices: Object<string,string>}} */
 		this.names = { scenes: {}, groups: {}, devices: {} };
 		this.hasNames = false;
+		// Padded indices of device slots known to be empty placeholders (node_type 0); their
+		// values messages are ignored so phantom devices.<n> are not created.
+		this.placeholderDevices = /** @type {Set<string>} */ (new Set());
 
 		this.on('ready', this.onReady.bind(this));
 		this.on('stateChange', this.onStateChange.bind(this));
@@ -66,6 +69,10 @@ class CasambiLithernet extends utils.Adapter {
 	 */
 	async onReady() {
 		await this.setState('info.connection', false, true);
+
+		// One-time migration: remove any legacy unpadded scene/group/device/button objects
+		// left by earlier versions before indices were zero-padded (devices.1 -> devices.001).
+		await this.cleanupLegacyIndices();
 
 		// Normalise configuration with safe defaults.
 		const bind = this.config.bind || '0.0.0.0';
@@ -97,7 +104,7 @@ class CasambiLithernet extends utils.Adapter {
 		if (buttonCount > 0) {
 			seed.buttons = {};
 			for (let i = 0; i < buttonCount; i++) {
-				seed.buttons[i] = { level: 0, pressed: false, released: false };
+				seed.buttons[casambi.padIndex(i)] = { level: 0, pressed: false, released: false };
 			}
 		}
 		await jsonExplorer.traverseJson(seed, '', false, false, 0);
@@ -131,9 +138,40 @@ class CasambiLithernet extends utils.Adapter {
 	 * @param {object} payload - JSON-parsed payload
 	 */
 	async handleFeedback(topic, payload) {
+		// A deleted node: drop its object tree and remember it as a placeholder.
+		if (casambi.isNodeDeleted(topic, this.cfg)) {
+			if (payload && payload.device != null) {
+				const index = casambi.padIndex(payload.device);
+				this.placeholderDevices.add(index);
+				await this.removeDeviceTree(index);
+			}
+			return;
+		}
+
+		// Device realness gating: only real devices (propertys.node_type != 0) get states.
+		// Empty slots still emit values with stale junk - skip those so no phantom device is made.
+		const device = casambi.classifyDevice(topic, this.cfg);
+		if (device) {
+			if (device.kind === 'propertys') {
+				if (payload && payload.node_type === 0) {
+					if (!this.placeholderDevices.has(device.index)) {
+						this.placeholderDevices.add(device.index);
+						await this.removeDeviceTree(device.index);
+					}
+					return;
+				}
+				// A real (or newly-populated) slot: clear any prior placeholder mark.
+				this.placeholderDevices.delete(device.index);
+			} else if (this.placeholderDevices.has(device.index)) {
+				return; // values for a known-empty slot
+			}
+		}
+
 		const tree = casambi.parseGet(topic, payload, this.cfg);
 		if (!tree) {
-			this.log.debug(`Unhandled feedback on ${topic}: ${JSON.stringify(payload)}`);
+			// Placeholder slots and unknown topics both land here; keep it quiet (use the
+			// "log all incoming MQTT messages" toggle for raw traffic during debugging).
+			this.log.silly(`Ignored feedback on ${topic}: ${JSON.stringify(payload)}`);
 			return;
 		}
 		// Inject friendly names so jsonExplorer labels the scene/group/device channels.
@@ -141,6 +179,55 @@ class CasambiLithernet extends utils.Adapter {
 			this.applyNames(tree);
 		}
 		await jsonExplorer.traverseJson(tree, '', this.hasNames, false, 0);
+	}
+
+	/**
+	 * Delete a device's object tree (used for empty/placeholder slots and node_deleted).
+	 *
+	 * @param {string} index - padded device index, e.g. "007"
+	 * @returns {Promise<void>}
+	 */
+	async removeDeviceTree(index) {
+		try {
+			await this.delObjectAsync(`devices.${index}`, { recursive: true });
+		} catch (error) {
+			this.log.debug(`removeDeviceTree(${index}): ${error.message}`);
+		}
+	}
+
+	/**
+	 * One-time cleanup of legacy unpadded scene/group/device/button objects created before
+	 * indices were zero-padded. Removes e.g. devices.1 once devices.001 is in use.
+	 *
+	 * @returns {Promise<void>}
+	 */
+	async cleanupLegacyIndices() {
+		try {
+			const objects = await this.getAdapterObjectsAsync();
+			const prefix = `${this.namespace}.`;
+			const channels = ['devices', 'scenes', 'groups', 'buttons'];
+			const removed = new Set();
+			for (const fullId of Object.keys(objects)) {
+				const rel = fullId.slice(prefix.length).split('.');
+				if (
+					rel.length >= 2 &&
+					channels.includes(rel[0]) &&
+					/^\d+$/.test(rel[1]) &&
+					rel[1].length < casambi.INDEX_WIDTH
+				) {
+					const channelId = `${rel[0]}.${rel[1]}`;
+					if (!removed.has(channelId)) {
+						removed.add(channelId);
+						await this.delObjectAsync(channelId, { recursive: true });
+					}
+				}
+			}
+			if (removed.size) {
+				this.log.info(`Removed ${removed.size} legacy unpadded object(s) after index zero-padding migration.`);
+			}
+		} catch (error) {
+			this.log.debug(`cleanupLegacyIndices: ${error.message}`);
+		}
 	}
 
 	/**
@@ -157,8 +244,10 @@ class CasambiLithernet extends utils.Adapter {
 				continue;
 			}
 			for (const index of Object.keys(tree[channel])) {
-				if (map[index]) {
-					tree[channel][index].name = map[index];
+				// Tree keys are zero-padded ("007"); name-map keys come from config (raw "7").
+				const name = map[index] || map[String(Number(index))];
+				if (name) {
+					tree[channel][index].name = name;
 				}
 			}
 		}
