@@ -1,5 +1,18 @@
 {
-	"casambi-lithernet adapter settings": "casambi-lithernet的适配器设置",
-	"option1": "选项1",
-	"option2": "选项2"
+	"Default fade duration (ms)": "默认淡入淡出持续时间（毫秒）",
+	"Dimmer level scale": "调光器等级",
+	"Gateway": "网关",
+	"Gateway ID (topic segment)": "网关ID（主题段）",
+	"Injectable buttons": "可注射按钮",
+	"Listen address": "收听地址",
+	"MQTT broker": "MQTT 代理",
+	"Number of virtual buttons to create for injecting press/release events into Casambi (0 = none)": "创建用于将按下/释放事件注入 Casambi 的虚拟按钮数量（0 = 无）",
+	"Password (optional)": "密码（可选）",
+	"Percent (0-100 %)": "百分比（0-100%）",
+	"Port": "港口",
+	"Raw (0-254)": "原始 (0-254)",
+	"The <deviceId> set in the gateway web UI; topics are casambi/<id>/...": "网关Web UI中设置的<deviceId>；主题是 casambi/<id>/...",
+	"This adapter runs its own MQTT broker. Point the Lithernet Casambi gateway's MQTT client at this host and port. SSL is not supported by the gateway - use a trusted network.": "该适配器运行其自己的 MQTT 代理。将 Lithernet Casambi 网关的 MQTT 客户端指向此主机和端口。网关不支持 SSL - 使用受信任的网络。",
+	"Username (optional)": "用户名（可选）",
+	"casambi-lithernet adapter settings": "casambi-lithernet的适配器设置"
 }

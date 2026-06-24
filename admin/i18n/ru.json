@@ -1,5 +1,18 @@
 {
-	"casambi-lithernet adapter settings": "Настройки адаптера для casambi-lithernet",
-	"option1": "вариант 1",
-	"option2": "вариант 2"
+	"Default fade duration (ms)": "Длительность затухания по умолчанию (мс)",
+	"Dimmer level scale": "Шкала уровня диммера",
+	"Gateway": "шлюз",
+	"Gateway ID (topic segment)": "Идентификатор шлюза (тематический сегмент)",
+	"Injectable buttons": "Инъекционные пуговицы",
+	"Listen address": "Прослушать адрес",
+	"MQTT broker": "MQTT-брокер",
+	"Number of virtual buttons to create for injecting press/release events into Casambi (0 = none)": "Количество виртуальных кнопок, которые необходимо создать для внедрения событий нажатия/отпуска в Casambi (0 = нет)",
+	"Password (optional)": "Пароль (необязательно)",
+	"Percent (0-100 %)": "Процент (0–100 %)",
+	"Port": "Порт",
+	"Raw (0-254)": "Сырой (0-254)",
+	"The <deviceId> set in the gateway web UI; topics are casambi/<id>/...": "<deviceId>, заданный в веб-интерфейсе шлюза; темы: casambi/<id>/...",
+	"This adapter runs its own MQTT broker. Point the Lithernet Casambi gateway's MQTT client at this host and port. SSL is not supported by the gateway - use a trusted network.": "Этот адаптер использует собственный брокер MQTT. Направьте MQTT-клиент шлюза Lithernet Casambi на этот хост и порт. SSL не поддерживается шлюзом — используйте доверенную сеть.",
+	"Username (optional)": "Имя пользователя (необязательно)",
+	"casambi-lithernet adapter settings": "Настройки адаптера для casambi-lithernet"
 }

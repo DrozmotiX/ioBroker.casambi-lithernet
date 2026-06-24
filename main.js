@@ -1,15 +1,18 @@
 'use strict';
 
 /*
- * Created with @iobroker/create-adapter v3.1.5
+ * ioBroker.casambi-lithernet
+ * Integrates a Lithernet Casambi gateway over MQTT. The adapter runs an embedded
+ * MQTT broker (aedes); the gateway connects to it as a client and exchanges fixed
+ * topics under casambi/<gatewayId>/{set,get}/...  Object creation follows the
+ * DrozmotiX house style: iobroker-jsonexplorer + lib/state_attr.js.
  */
 
-// The adapter-core module gives you access to the core ioBroker functions
-// you need to create an adapter
 const utils = require('@iobroker/adapter-core');
-
-// Load your modules here, e.g.:
-// const fs = require('fs');
+const jsonExplorer = require('iobroker-jsonexplorer');
+const stateAttr = require('./lib/state_attr.js');
+const CasambiBroker = require('./lib/broker.js');
+const casambi = require('./lib/casambi.js');
 
 class CasambiLithernet extends utils.Adapter {
 	/**
@@ -20,75 +23,134 @@ class CasambiLithernet extends utils.Adapter {
 			...options,
 			name: 'casambi-lithernet',
 		});
+
+		this.broker = /** @type {CasambiBroker|null} */ (null);
+		this.cfg = /** @type {{gatewayId: string, defaultDuration: number, levelScale: string}} */ ({
+			gatewayId: '0',
+			defaultDuration: 0,
+			levelScale: 'percent',
+		});
+
 		this.on('ready', this.onReady.bind(this));
 		this.on('stateChange', this.onStateChange.bind(this));
-		// this.on('objectChange', this.onObjectChange.bind(this));
-		// this.on('message', this.onMessage.bind(this));
 		this.on('unload', this.onUnload.bind(this));
+
+		jsonExplorer.init(this, stateAttr);
 	}
 
 	/**
 	 * Is called when databases are connected and adapter received configuration.
 	 */
 	async onReady() {
-		// Initialize your adapter here
+		await this.setState('info.connection', false, true);
 
-		// Reset the connection indicator during startup
-		this.setState('info.connection', false, true);
+		// Normalise configuration with safe defaults.
+		const bind = this.config.bind || '0.0.0.0';
+		const port = Number(this.config.port) || 3791;
+		const gatewayId =
+			this.config.gatewayId != null && this.config.gatewayId !== '' ? String(this.config.gatewayId) : '0';
+		this.cfg = {
+			gatewayId,
+			defaultDuration: Number(this.config.defaultDuration) || 0,
+			levelScale: this.config.levelScale === 'raw' ? 'raw' : 'percent',
+		};
 
-		// The adapters config (in the instance object everything under the attribute "native") is accessible via
-		// this.config:
-		this.log.debug('config option1: ${this.config.option1}');
-		this.log.debug('config option2: ${this.config.option2}');
+		// Seed the input-only states the gateway never reports back:
+		// the gateway's own luminaire (control), injected sensors and virtual buttons.
+		const seed = {
+			control: { level: 0, duration: this.cfg.defaultDuration },
+			sensors: { lux: 0, pir: false },
+		};
+		const buttonCount = Math.min(255, Math.max(0, Number(this.config.buttonCount) || 0));
+		if (buttonCount > 0) {
+			seed.buttons = {};
+			for (let i = 0; i < buttonCount; i++) {
+				seed.buttons[i] = { level: 0, pressed: false, released: false };
+			}
+		}
+		await jsonExplorer.traverseJson(seed, '', false, false, 0);
 
-		/*
-		For every state in the system there has to be also an object of type state
-		Here a simple template for a boolean variable named "testVariable"
-		Because every adapter instance uses its own unique namespace variable names can't collide with other adapters variables
+		// Start the embedded MQTT broker.
+		this.broker = new CasambiBroker(
+			this,
+			{ bind, port, username: this.config.username || '', password: this.config.password || '' },
+			(topic, payload) => this.handleFeedback(topic, payload),
+		);
 
-		IMPORTANT: State roles should be chosen carefully based on the state's purpose.
-		           Please refer to the state roles documentation for guidance:
-		           https://www.iobroker.net/#en/documentation/dev/stateroles.md
-		*/
-		await this.setObjectNotExistsAsync('testVariable', {
-			type: 'state',
-			common: {
-				name: 'testVariable',
-				type: 'boolean',
-				role: 'indicator',
-				read: true,
-				write: true,
-			},
-			native: {},
-		});
+		try {
+			await this.broker.start();
+		} catch (error) {
+			this.broker = null;
+			this.log.error(`Could not start MQTT broker on ${bind}:${port}: ${error.message}`);
+			return;
+		}
 
-		// In order to get state updates, you need to subscribe to them. The following line adds a subscription for our variable we have created above.
-		this.subscribeStates('testVariable');
-		// You can also add a subscription for multiple states. The following line watches all states starting with "lights."
-		// this.subscribeStates('lights.*');
-		// Or, if you really must, you can also watch all states. Don't do this if you don't need to. Otherwise this will cause a lot of unnecessary load on the system:
-		// this.subscribeStates('*');
+		// jsonExplorer auto-subscribes writable states; subscribe broadly to be safe.
+		this.subscribeStates('*');
+		this.log.info(
+			`Ready - point the gateway's MQTT client at this host:${port}, topic prefix "casambi/${gatewayId}/" (no SSL).`,
+		);
+	}
 
-		/*
-			setState examples
-			you will notice that each setState will cause the stateChange event to fire (because of above subscribeStates cmd)
-		*/
-		// the variable testVariable is set to true as command (ack=false)
-		await this.setState('testVariable', true);
+	/**
+	 * Handle a feedback message published by the gateway (get/...).
+	 *
+	 * @param {string} topic - full MQTT topic
+	 * @param {object} payload - JSON-parsed payload
+	 */
+	async handleFeedback(topic, payload) {
+		const tree = casambi.parseGet(topic, payload, this.cfg);
+		if (!tree) {
+			this.log.debug(`Unhandled feedback on ${topic}: ${JSON.stringify(payload)}`);
+			return;
+		}
+		await jsonExplorer.traverseJson(tree, '', false, false, 0);
+	}
 
-		// same thing, but the value is flagged "ack"
-		// ack should be always set to true if the value is received from or acknowledged from the target system
-		await this.setState('testVariable', { val: true, ack: true });
+	/**
+	 * Is called if a subscribed state changes. User commands (ack === false) are
+	 * translated into MQTT commands and published to the gateway.
+	 *
+	 * @param {string} id - State ID
+	 * @param {ioBroker.State | null | undefined} state - State object
+	 */
+	onStateChange(id, state) {
+		if (!state || state.ack || !this.broker) {
+			return;
+		}
+		const parts = this.parseStateId(id);
+		if (!parts) {
+			return;
+		}
+		const command = casambi.buildCommand(parts, state.val, this.cfg);
+		if (!command) {
+			this.log.debug(`No command mapping for ${id} (read-only or parameter)`);
+			return;
+		}
+		this.broker.publish(command.topic, command.payload);
+		// Optimistically acknowledge; the gateway also reports the actual value via get/*.
+		this.setState(id, { val: state.val, ack: true });
+	}
 
-		// same thing, but the state is deleted after 30s (getState will return null afterwards)
-		await this.setState('testVariable', { val: true, ack: true, expire: 30 });
-
-		// examples for the checkPassword/checkGroup functions
-		const pwdResult = await this.checkPasswordAsync('admin', 'iobroker');
-		this.log.info(`check user admin pw iobroker: ${pwdResult}`);
-
-		const groupResult = await this.checkGroupAsync('admin', 'admin');
-		this.log.info(`check group user admin group admin: ${groupResult}`);
+	/**
+	 * Split a full state id into its addressing parts.
+	 * e.g. casambi-lithernet.0.scenes.3.level -> { channel:'scenes', index:3, leaf:'level' }
+	 *      casambi-lithernet.0.control.level  -> { channel:'control', index:null, leaf:'level' }
+	 *
+	 * @param {string} id - full state id
+	 * @returns {{channel: string, index: number|null, leaf: string}|null} parsed parts, or null if not addressable
+	 */
+	parseStateId(id) {
+		const rel = id.split('.').slice(2); // strip "casambi-lithernet.<instance>"
+		if (rel.length < 2) {
+			return null;
+		}
+		const channel = rel[0];
+		if (rel.length === 2) {
+			return { channel, index: null, leaf: rel[1] };
+		}
+		const index = Number(rel[1]);
+		return { channel, index: Number.isNaN(index) ? null : index, leaf: rel[rel.length - 1] };
 	}
 
 	/**
@@ -96,78 +158,18 @@ class CasambiLithernet extends utils.Adapter {
 	 *
 	 * @param {() => void} callback - Callback function
 	 */
-	onUnload(callback) {
+	async onUnload(callback) {
 		try {
-			// Here you must clear all timeouts or intervals that may still be active
-			// clearTimeout(timeout1);
-			// clearTimeout(timeout2);
-			// ...
-			// clearInterval(interval1);
-
+			if (this.broker) {
+				await this.broker.stop();
+				this.broker = null;
+			}
 			callback();
 		} catch (error) {
 			this.log.error(`Error during unloading: ${error.message}`);
 			callback();
 		}
 	}
-
-	// If you need to react to object changes, uncomment the following block and the corresponding line in the constructor.
-	// You also need to subscribe to the objects with `this.subscribeObjects`, similar to `this.subscribeStates`.
-	// /**
-	//  * Is called if a subscribed object changes
-	//  * @param {string} id
-	//  * @param {ioBroker.Object | null | undefined} obj
-	//  */
-	// onObjectChange(id, obj) {
-	// 	if (obj) {
-	// 		// The object was changed
-	// 		this.log.info(`object ${id} changed: ${JSON.stringify(obj)}`);
-	// 	} else {
-	// 		// The object was deleted
-	// 		this.log.info(`object ${id} deleted`);
-	// 	}
-	// }
-
-	/**
-	 * Is called if a subscribed state changes
-	 *
-	 * @param {string} id - State ID
-	 * @param {ioBroker.State | null | undefined} state - State object
-	 */
-	onStateChange(id, state) {
-		if (state) {
-			// The state was changed
-			this.log.info(`state ${id} changed: ${state.val} (ack = ${state.ack})`);
-
-			if (state.ack === false) {
-				// This is a command from the user (e.g., from the UI or other adapter)
-				// and should be processed by the adapter
-				this.log.info(`User command received for ${id}: ${state.val}`);
-
-				// TODO: Add your control logic here
-			}
-		} else {
-			// The object was deleted or the state value has expired
-			this.log.info(`state ${id} deleted`);
-		}
-	}
-	// If you need to accept messages in your adapter, uncomment the following block and the corresponding line in the constructor.
-	// /**
-	//  * Some message was sent to this instance over message box. Used by email, pushover, text2speech, ...
-	//  * Using this method requires "common.messagebox" property to be set to true in io-package.json
-	//  * @param {ioBroker.Message} obj
-	//  */
-	// onMessage(obj) {
-	// 	if (typeof obj === 'object' && obj.message) {
-	// 		if (obj.command === 'send') {
-	// 			// e.g. send email or pushover or whatever
-	// 			this.log.info('send command');
-
-	// 			// Send response in callback if required
-	// 			if (obj.callback) this.sendTo(obj.from, obj.command, 'Message received', obj.callback);
-	// 		}
-	// 	}
-	// }
 }
 
 if (require.main !== module) {
@@ -175,7 +177,7 @@ if (require.main !== module) {
 	/**
 	 * @param {Partial<utils.AdapterOptions>} [options] - Adapter options
 	 */
-	module.exports = (options) => new CasambiLithernet(options);
+	module.exports = options => new CasambiLithernet(options);
 } else {
 	// otherwise start the instance directly
 	new CasambiLithernet();

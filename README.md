@@ -12,87 +12,82 @@
 
 ## casambi-lithernet adapter for ioBroker
 
-ioBroker Lithernet – Casambi allows communication by MQTT protocol with Lithernet–Casambi gateway enabling Ethernet-based integration of the Casambi Bluetooth system into the ioBroker environment. The gateway connects to the local network via Ethernet and communicates with Casambi devices over Bluetooth, allowing for control and monitoring of Casambi-enabled lighting systems through the ioBroker platform.
+Integrates a **Lithernet Casambi gateway** into ioBroker over **MQTT**. The gateway
+bridges the Casambi *Bluetooth* lighting mesh to the IP network via Ethernet; this
+adapter speaks to it locally, with no cloud involved.
 
-## Developer manual
-This section is intended for the developer. It can be deleted later.
+The Casambi gateway is an MQTT *client* and needs a broker to connect to. Rather than
+forcing you to install and configure a separate broker, **this adapter runs its own
+embedded MQTT broker** ([aedes](https://github.com/moscajs/aedes)). You simply point the
+gateway's MQTT client at the ioBroker host and the configured port.
 
-### DISCLAIMER
+- Manufacturer / product: <https://casambi.lithernet.de/> · system manual <https://lither.net/man>
+- Casambi: <https://casambi.com/>
 
-Please make sure that you consider copyrights and trademarks when you use names or logos of a company and add a disclaimer to your README.
-You can check other adapters for examples or ask in the developer community. Using a name or logo of a company without permission may cause legal problems for you.
+> **Disclaimer:** *Casambi* and *Lithernet* are trademarks of their respective owners.
+> This is an independent, community-developed adapter and is not affiliated with or
+> endorsed by Casambi Technologies Oy or Lithernet.
 
-### Getting started
+## Features
 
-You are almost done, only a few steps left:
-1. Create a new repository on GitHub with the name `ioBroker.casambi-lithernet`
+- Embedded MQTT broker – no external broker required.
+- Scenes, groups and individual devices are **auto-discovered** from the gateway's cyclic
+  status feedback and exposed as ioBroker states.
+- Control of the gateway's own luminaire, scenes and groups (with fade duration).
+- Inject **light (lux)** and **PIR** sensor values, and optional virtual **button** events
+  back into the Casambi network.
+- Dimmer levels exposed as 0–100 % (default) or raw 0–254.
 
-1. Push all files to the GitHub repo. The creator has already set up the local repository for you:  
-	```bash
-	git push origin main
-	```
+## Prerequisites
 
-1. Head over to [main.js](main.js) and start programming!
+- A Lithernet Casambi gateway on the same trusted network as ioBroker.
+- Casambi **Evolution** firmware **> v35** is recommended (Classic firmware works with
+  reduced functionality).
+- **No SSL:** the gateway does not support MQTT over TLS, so the broker listens on plain
+  TCP. Run it on a trusted VLAN only.
 
-### Best Practices
-We've collected some [best practices](https://github.com/ioBroker/ioBroker.repositories#development-and-coding-best-practices) regarding ioBroker development and coding in general. If you're new to ioBroker or Node.js, you should
-check them out. If you're already experienced, you should also take a look at them - you might learn something new :)
+## Setup
 
-### State Roles
-When creating state objects, it is important to use the correct role for the state. The role defines how the state should be interpreted by visualizations and other adapters. For a list of available roles and their meanings, please refer to the [state roles documentation](https://www.iobroker.net/#en/documentation/dev/stateroles.md).
+1. Install the adapter and create an instance.
+2. In the instance settings configure the **MQTT broker** (listen address, **port** –
+   default `3791`, optional username/password) and the **Gateway ID** (the `<deviceId>`
+   you set in the gateway's web UI – default `0`).
+3. In the gateway's web UI, enable **MQTT mode** and point its MQTT client at
+   `<ioBroker-host>:<port>` (and the credentials, if you set any).
+4. Once the gateway connects, `info.connection` turns green and the
+   `scenes`, `groups` and `devices` trees populate from the gateway's feedback.
 
-**Important:** Do not invent your own custom role names. If you need a role that is not part of the official list, please contact the ioBroker developer community for guidance and discussion about adding new roles.
+## Objects
 
-### Scripts in `package.json`
-Several npm scripts are predefined for your convenience. You can run them using `npm run <scriptname>`
-| Script name | Description |
-|-------------|-------------|
-| `test:js` | Executes the tests you defined in `*.test.js` files. |
-| `test:package` | Ensures your `package.json` and `io-package.json` are valid. |
-| `test:integration` | Tests the adapter startup with an actual instance of ioBroker. |
-| `test` | Performs a minimal test run on package files and your tests. |
-| `check` | Performs a type-check on your code (without compiling anything). |
-| `lint` | Runs `ESLint` to check your code for formatting errors and potential bugs. |
-| `translate` | Translates texts in your adapter to all required languages, see [`@iobroker/adapter-dev`](https://github.com/ioBroker/adapter-dev#manage-translations) for more details. |
-| `release` | Creates a new release, see [`@alcalzone/release-script`](https://github.com/AlCalzone/release-script#usage) for more details. |
+All dimmer levels honour the **Dimmer level scale** setting (percent by default).
 
-### Writing tests
-When done right, testing code is invaluable, because it gives you the 
-confidence to change your code while knowing exactly if and when 
-something breaks. A good read on the topic of test-driven development 
-is https://hackernoon.com/introduction-to-test-driven-development-tdd-61a13bc92d92. 
-Although writing tests before the code might seem strange at first, but it has very 
-clear upsides.
+| State | Role | Direction | MQTT |
+|-------|------|-----------|------|
+| `info.connection` | `indicator.connected` | read | gateway client connected |
+| `control.level` | `level.dimmer` | write | `set/level` (gateway luminaire) |
+| `control.duration` | `value` | write | fade duration (ms) for `control.level` |
+| `scenes.<n>.level` | `level.dimmer` | read/write | `set/scene_level` ↔ feedback |
+| `scenes.<n>.active` | `indicator` | read | feedback |
+| `groups.<n>.level` | `level.dimmer` | read/write | `set/group_level` ↔ feedback |
+| `devices.<n>.level` | `level.dimmer` | read | feedback (monitoring only) |
+| `devices.<n>.condition` | `value` | read | feedback |
+| `sensors.lux` | `value.brightness` | write | `set/light_sensor` |
+| `sensors.pir` | `switch` | write | `set/pir_sensor` |
+| `buttons.<n>.level` | `level.dimmer` | write | `set/button_level` |
+| `buttons.<n>.pressed` | `button` | write | `set/push_button_pressed` |
+| `buttons.<n>.released` | `button` | write | `set/push_button_released` |
 
-The template provides you with basic tests for the adapter startup and package files.
-It is recommended that you add your own tests into the mix.
+`scenes`, `groups` and `devices` are created on demand from the gateway's feedback.
+`sensors` and `buttons` are inputs the adapter injects; the number of virtual buttons is
+set with the **Injectable buttons** option (0 = none).
 
-### Publishing the adapter
-Using GitHub Actions, you can enable automatic releases on npm whenever you push a new git tag that matches the form 
-`v<major>.<minor>.<patch>`. We **strongly recommend** that you do. The necessary steps are described in `.github/workflows/test-and-release.yml`.
+## Limitations
 
-Since you installed the release script, you can create a new
-release simply by calling:
-```bash
-npm run release
-```
-Additional command line options for the release script are explained in the
-[release-script documentation](https://github.com/AlCalzone/release-script#command-line).
-
-To get your adapter released in ioBroker, please refer to the documentation 
-of [ioBroker.repositories](https://github.com/ioBroker/ioBroker.repositories#requirements-for-adapter-to-get-added-to-the-latest-repository).
-
-### Test the adapter manually with dev-server
-Since you set up `dev-server`, you can use it to run, test and debug your adapter.
-
-You may start `dev-server` by calling from your dev directory:
-```bash
-dev-server watch
-```
-
-The ioBroker.admin interface will then be available at http://localhost:undefined/
-
-Please refer to the [`dev-server` documentation](https://github.com/ioBroker/dev-server#command-line) for more details.
+- Individual `devices.<n>` are **monitoring only** – the gateway exposes no per-device set
+  topic; control luminaires via scenes, groups or the gateway luminaire instead.
+- The gateway uses **fixed MQTT topics** that cannot be remapped on the device.
+- Per-gateway limits: 250 devices, 255 groups, 255 scenes. More polled devices means
+  slower cyclic status updates.
 
 ## Changelog
 <!--
@@ -100,8 +95,8 @@ Please refer to the [`dev-server` documentation](https://github.com/ioBroker/dev
 	### **WORK IN PROGRESS**
 -->
 
-### **WORK IN PROGRESS**
-* (DutchmanNL) initial release
+### 0.1.0 (2026-06-24)
+* (DutchmanNL) Initial release: embedded MQTT broker, scene/group/device discovery, gateway/scene/group control, lux/PIR/button injection
 
 ## License
 MIT License

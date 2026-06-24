@@ -1,5 +1,18 @@
 {
-	"casambi-lithernet adapter settings": "Impostazioni dell'adattatore per casambi-lithernet",
-	"option1": "opzione1",
-	"option2": "opzione2"
+	"Default fade duration (ms)": "Durata della dissolvenza predefinita (ms)",
+	"Dimmer level scale": "Scala del livello del dimmer",
+	"Gateway": "Porta",
+	"Gateway ID (topic segment)": "ID gateway (segmento di argomento)",
+	"Injectable buttons": "Pulsanti iniettabili",
+	"Listen address": "Ascolta l'indirizzo",
+	"MQTT broker": "Broker MQTT",
+	"Number of virtual buttons to create for injecting press/release events into Casambi (0 = none)": "Numero di pulsanti virtuali da creare per inserire eventi di stampa/rilascio in Casambi (0 = nessuno)",
+	"Password (optional)": "Password (facoltativa)",
+	"Percent (0-100 %)": "Percentuale (0-100%)",
+	"Port": "Porta",
+	"Raw (0-254)": "Grezzo (0-254)",
+	"The <deviceId> set in the gateway web UI; topics are casambi/<id>/...": "Il <deviceId> impostato nell'interfaccia utente Web del gateway; gli argomenti sono casambi/<id>/...",
+	"This adapter runs its own MQTT broker. Point the Lithernet Casambi gateway's MQTT client at this host and port. SSL is not supported by the gateway - use a trusted network.": "Questo adattatore esegue il proprio broker MQTT. Punta il client MQTT del gateway Lithernet Casambi a questo host e porta. SSL non è supportato dal gateway: utilizza una rete affidabile.",
+	"Username (optional)": "Nome utente (facoltativo)",
+	"casambi-lithernet adapter settings": "Impostazioni dell'adattatore per casambi-lithernet"
 }

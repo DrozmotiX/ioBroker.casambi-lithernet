@@ -1,9 +1,9 @@
 {
 	"common": {
 		"name": "casambi-lithernet",
-		"version": "0.0.1",
+		"version": "0.1.0",
 		"news": {
-			"0.0.1": {
+			"0.1.0": {
 				"en": "initial release",
 				"de": "Erstveröffentlichung",
 				"ru": "Начальная версия",
@@ -43,8 +43,18 @@
 			"uk": "ioBroker Lithernet – Casambi забезпечує зв’язок за допомогою протоколу MQTT зі шлюзом Lithernet–Casambi, що забезпечує інтеграцію системи Bluetooth Casambi в середовище ioBroker на основі Ethernet. Шлюз підключається до локальної мережі через Ethernet і спілкується з пристроями Casambi через Bluetooth, дозволяючи контролювати та контролювати системи освітлення з підтримкою Casambi через платформу ioBroker.",
 			"zh-cn": "ioBroker Lithernet – Casambi 允许通过 MQTT 协议与 Lithernet –Casambi 网关进行通信，从而实现基于以太网的 Casambi 蓝牙系统集成到 ioBroker 环境中。该网关通过以太网连接到本地网络，并通过蓝牙与 Casambi 设备通信，从而可以通过 ioBroker 平台控制和监控支持 Casambi 的照明系统。"
 		},
-		"authors": ["DutchmanNL <oss@drozmotix.eu>"],
-		"keywords": ["template", "automation", "IoT", "integration"],
+		"authors": [
+			"DutchmanNL <oss@drozmotix.eu>"
+		],
+		"keywords": [
+			"casambi",
+			"lithernet",
+			"mqtt",
+			"lighting",
+			"bluetooth",
+			"automation",
+			"IoT"
+		],
 		"licenseInformation": {
 			"type": "free",
 			"license": "MIT"
@@ -75,9 +85,21 @@
 			}
 		]
 	},
+	"encryptedNative": [
+		"password"
+	],
+	"protectedNative": [
+		"password"
+	],
 	"native": {
-		"option1": true,
-		"option2": "42"
+		"bind": "0.0.0.0",
+		"port": 3791,
+		"gatewayId": "0",
+		"username": "",
+		"password": "",
+		"defaultDuration": 0,
+		"levelScale": "percent",
+		"buttonCount": 0
 	},
 	"objects": [],
 	"instanceObjects": [
