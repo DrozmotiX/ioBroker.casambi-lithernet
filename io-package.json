@@ -1,8 +1,21 @@
 {
 	"common": {
 		"name": "casambi-lithernet",
-		"version": "0.1.0",
+		"version": "0.1.1",
 		"news": {
+			"0.1.1": {
+				"en": "Added option to log all incoming MQTT messages for setup and diagnostics",
+				"de": "Option hinzugefügt, um alle eingehenden MQTT-Nachrichten für Einrichtung und Diagnose zu protokollieren",
+				"ru": "Добавлена ​​возможность протоколировать все входящие сообщения MQTT для настройки и диагностики.",
+				"pt": "Adicionada opção para registrar todas as mensagens MQTT recebidas para configuração e diagnóstico",
+				"nl": "Optie toegevoegd om alle inkomende MQTT-berichten te loggen voor installatie en diagnostiek",
+				"fr": "Option ajoutée pour enregistrer tous les messages MQTT entrants pour la configuration et les diagnostics",
+				"it": "Aggiunta un'opzione per registrare tutti i messaggi MQTT in entrata per la configurazione e la diagnostica",
+				"es": "Opción agregada para registrar todos los mensajes MQTT entrantes para configuración y diagnóstico.",
+				"pl": "Dodano opcję rejestrowania wszystkich przychodzących komunikatów MQTT w celu konfiguracji i diagnostyki",
+				"uk": "Додана опція для реєстрації всіх вхідних повідомлень MQTT для налаштування та діагностики",
+				"zh-cn": "添加了用于记录所有传入 MQTT 消息以进行设置和诊断的选项"
+			},
 			"0.1.0": {
 				"en": "initial release",
 				"de": "Erstveröffentlichung",
