@@ -1,8 +1,21 @@
 {
 	"common": {
 		"name": "casambi-lithernet",
-		"version": "0.3.0",
+		"version": "0.3.1",
 		"news": {
+			"0.3.1": {
+				"en": "Leaner, correct object tree: placeholder scene/group/device slots are no longer created, indices are zero-padded for natural sorting, and a plain dimmer only gets the states it needs. Adds an opt-in cleanup of orphaned objects.",
+				"de": "Schlankerer, korrekter Objektbaum: Platzhalter-Slots für Szenen/Gruppen/Geräte werden nicht mehr angelegt, Indizes sind für natürliche Sortierung mit Nullen aufgefüllt, und ein einfacher Dimmer erhält nur die benötigten Zustände. Fügt eine optionale Bereinigung verwaister Objekte hinzu.",
+				"ru": "Более компактное и корректное дерево объектов: пустые слоты сцен/групп/устройств больше не создаются, индексы дополнены нулями для естественной сортировки, а обычный диммер получает только нужные состояния. Добавлена необязательная очистка осиротевших объектов.",
+				"pt": "Árvore de objetos mais enxuta e correta: slots de cena/grupo/dispositivo de espaço reservado não são mais criados, os índices são preenchidos com zeros para ordenação natural e um dimmer simples recebe apenas os estados necessários. Adiciona uma limpeza opcional de objetos órfãos.",
+				"nl": "Slankere, correcte objectstructuur: lege scène-/groep-/apparaatslots worden niet meer aangemaakt, indices zijn met nullen aangevuld voor natuurlijke sortering en een gewone dimmer krijgt alleen de benodigde statussen. Voegt een optionele opschoning van verweesde objecten toe.",
+				"fr": "Arborescence d'objets plus légère et correcte : les emplacements de scène/groupe/appareil de remplacement ne sont plus créés, les index sont complétés par des zéros pour un tri naturel et un simple variateur n'obtient que les états nécessaires. Ajoute un nettoyage facultatif des objets orphelins.",
+				"it": "Albero degli oggetti più snello e corretto: gli slot segnaposto di scene/gruppi/dispositivi non vengono più creati, gli indici sono riempiti con zeri per l'ordinamento naturale e un semplice dimmer ottiene solo gli stati necessari. Aggiunge una pulizia facoltativa degli oggetti orfani.",
+				"es": "Árbol de objetos más ligero y correcto: ya no se crean ranuras de marcador de posición de escena/grupo/dispositivo, los índices se rellenan con ceros para una ordenación natural y un atenuador simple solo obtiene los estados que necesita. Añade una limpieza opcional de objetos huérfanos.",
+				"pl": "Szczuplejsze, poprawne drzewo obiektów: zastępcze sloty scen/grup/urządzeń nie są już tworzone, indeksy są uzupełniane zerami dla naturalnego sortowania, a zwykły ściemniacz otrzymuje tylko potrzebne stany. Dodaje opcjonalne czyszczenie osieroconych obiektów.",
+				"uk": "Стрункіше, коректне дерево об'єктів: порожні слоти сцен/груп/пристроїв більше не створюються, індекси доповнено нулями для природного сортування, а звичайний димер отримує лише потрібні стани. Додано необов'язкове очищення осиротілих об'єктів.",
+				"zh-cn": "更精简、正确的对象树：不再创建占位的场景/组/设备槽位，索引以零填充以实现自然排序，普通调光器仅获得所需的状态。新增可选的孤立对象清理功能。"
+			},
 			"0.3.0": {
 				"en": "Added a Names config tab to assign friendly names to scenes, groups and devices (applied as channel names)",
 				"de": "Es wurde eine Konfigurationsregisterkarte „Namen“ hinzugefügt, um Szenen, Gruppen und Geräten benutzerfreundliche Namen zuzuweisen (die als Kanalnamen angewendet werden).",

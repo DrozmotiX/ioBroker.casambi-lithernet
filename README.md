@@ -101,7 +101,9 @@ topic. `sensors` and `buttons` are inputs the adapter injects (`Injectable butto
 	### **WORK IN PROGRESS**
 -->
 
-### **WORK IN PROGRESS**
+### 0.3.1 (2026-06-25)
+Leaner, correct object tree built from the gateway's padded cyclic poll: placeholder slots are no longer created, indices sort naturally, and a plain dimmer only gets the states it needs. Adds an opt-in cleanup of orphaned objects. Derived from a live REV2.5 / fw 4.56 mapping session.
+
 * (DutchmanNL) New **Remove orphaned objects** option (Settings → Maintenance, off by default) — after a full poll cycle on start, deletes scene/group/device objects whose entity no longer exists on the gateway; skipped while the gateway is offline so it can never wipe the tree
 * (DutchmanNL) Scene/group/device/button indices are now **zero-padded** (`devices.001`) so they sort naturally in admin; legacy unpadded objects are cleaned up automatically on first start
 * (DutchmanNL) **Placeholder slots are skipped** — unconfigured scenes/groups (level 255 sentinel; verified live: real scenes max at 254, an `active` scene is never dropped) and empty device slots (`node_type` 0) no longer create phantom states; honours `node_deleted`
