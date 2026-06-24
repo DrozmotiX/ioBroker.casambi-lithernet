@@ -5,7 +5,6 @@
 	"Gateway ID (topic segment)": "ID шлюзу (сегмент теми)",
 	"Injectable buttons": "Ін'єкційні кнопки",
 	"Listen address": "Слухайте адресу",
-	"Log all incoming MQTT messages": "Реєструвати всі вхідні повідомлення MQTT",
 	"MQTT broker": "Брокер MQTT",
 	"Number of virtual buttons to create for injecting press/release events into Casambi (0 = none)": "Кількість віртуальних кнопок для створення подій преси/релізів у Casambi (0 = немає)",
 	"Password (optional)": "Пароль (необов'язково)",
@@ -15,6 +14,5 @@
 	"The <deviceId> set in the gateway web UI; topics are casambi/<id>/...": "<deviceId>, встановлений у веб-інтерфейсі користувача шлюзу; теми casambi/<id>/...",
 	"This adapter runs its own MQTT broker. Point the Lithernet Casambi gateway's MQTT client at this host and port. SSL is not supported by the gateway - use a trusted network.": "Цей адаптер запускає власний брокер MQTT. Направте клієнт MQTT шлюзу Lithernet Casambi на цей хост і порт. SSL не підтримується шлюзом – використовуйте надійну мережу.",
 	"Username (optional)": "Ім'я користувача (необов'язково)",
-	"Write every message received from the gateway to the adapter log (info level). Useful for setup/diagnostics; disable in normal operation.": "Записувати кожне повідомлення, отримане від шлюзу, до журналу адаптера (рівень інформації). Корисно для налаштування/діагностики; відключити в нормальній роботі.",
 	"casambi-lithernet adapter settings": "Налаштування адаптера для casambi-lithernet"
 }

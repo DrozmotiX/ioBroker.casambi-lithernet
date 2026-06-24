@@ -1,8 +1,21 @@
 {
 	"common": {
 		"name": "casambi-lithernet",
-		"version": "0.1.1",
+		"version": "0.2.0",
 		"news": {
+			"0.2.0": {
+				"en": "Real gateway protocol: live scene/group/device state from poll_* feedback (level, colour, online, condition, battery) and whole-network broadcast control",
+				"de": "Echtes Gateway-Protokoll: Live-Szenen-/Gruppen-/Gerätestatus aus Poll_*-Feedback (Pegel, Farbe, Online, Zustand, Batterie) und Broadcast-Steuerung im gesamten Netzwerk",
+				"ru": "Протокол реального шлюза: состояние сцены/группы/устройства в реальном времени на основе обратной связи poll_* (уровень, цвет, онлайн, состояние, батарея) и управление трансляцией по всей сети",
+				"pt": "Protocolo de gateway real: cena ao vivo/grupo/estado do dispositivo a partir de feedback poll_* (nível, cor, on-line, condição, bateria) e controle de transmissão de toda a rede",
+				"nl": "Real gateway-protocol: live scène/groep/apparaatstatus via poll_* feedback (niveau, kleur, online, conditie, batterij) en uitzendingscontrole over het hele netwerk",
+				"fr": "Véritable protocole de passerelle : état en direct de la scène/du groupe/de l'appareil à partir des commentaires poll_* (niveau, couleur, en ligne, état, batterie) et contrôle de diffusion sur l'ensemble du réseau",
+				"it": "Protocollo gateway reale: stato di scena/gruppo/dispositivo live dal feedback poll_* (livello, colore, online, condizione, batteria) e controllo della trasmissione dell'intera rete",
+				"es": "Protocolo de puerta de enlace real: escena en vivo/grupo/estado del dispositivo a partir de comentarios de poll_* (nivel, color, en línea, condición, batería) y control de transmisión de toda la red",
+				"pl": "Prawdziwy protokół bramy: stan sceny/grupy/urządzenia na żywo na podstawie opinii poll_* (poziom, kolor, online, stan, bateria) i kontrola transmisji w całej sieci",
+				"uk": "Справжній протокол шлюзу: стан сцени/групи/пристрою в прямому ефірі на основі відгуків poll_* (рівень, колір, онлайн, стан, акумулятор) і керування трансляцією всієї мережі",
+				"zh-cn": "真实网关协议：poll_*反馈的现场场景/组/设备状态（电平、颜色、在线、状态、电池）和全网广播控制"
+			},
 			"0.1.1": {
 				"en": "Added option to log all incoming MQTT messages for setup and diagnostics",
 				"de": "Option hinzugefügt, um alle eingehenden MQTT-Nachrichten für Einrichtung und Diagnose zu protokollieren",
@@ -112,8 +125,7 @@
 		"password": "",
 		"defaultDuration": 0,
 		"levelScale": "percent",
-		"buttonCount": 0,
-		"logAllMessages": false
+		"buttonCount": 0
 	},
 	"objects": [],
 	"instanceObjects": [

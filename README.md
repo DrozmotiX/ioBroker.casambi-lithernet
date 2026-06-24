@@ -54,32 +54,38 @@ gateway's MQTT client at the ioBroker host and the configured port.
    you set in the gateway's web UI – default `0`).
 3. In the gateway's web UI, enable **MQTT mode** and point its MQTT client at
    `<ioBroker-host>:<port>` (and the credentials, if you set any).
-4. Once the gateway connects, `info.connection` turns green and the
-   `scenes`, `groups` and `devices` trees populate from the gateway's feedback.
+4. Once the gateway connects, `info.connection` turns green. To receive **feedback**
+   (scene/group/device state), the gateway must be set to **Polling Method = active** in its
+   own web UI, with the number of scenes/groups/devices to query configured. The
+   `broadcast`, `scenes`, `groups`, `devices` and `ungrouped` trees then populate live.
 
 ## Objects
 
-All dimmer levels honour the **Dimmer level scale** setting (percent by default).
+All dimmer levels honour the **Dimmer level scale** setting (percent by default). Feedback
+arrives on `get/poll_*` topics; the trees below are created on demand as the gateway polls.
 
 | State | Role | Direction | MQTT |
 |-------|------|-----------|------|
 | `info.connection` | `indicator.connected` | read | gateway client connected |
-| `control.level` | `level.dimmer` | write | `set/level` (gateway luminaire) |
-| `control.duration` | `value` | write | fade duration (ms) for `control.level` |
-| `scenes.<n>.level` | `level.dimmer` | read/write | `set/scene_level` ↔ feedback |
-| `scenes.<n>.active` | `indicator` | read | feedback |
-| `groups.<n>.level` | `level.dimmer` | read/write | `set/group_level` ↔ feedback |
-| `devices.<n>.level` | `level.dimmer` | read | feedback (monitoring only) |
-| `devices.<n>.condition` | `value` | read | feedback |
+| `broadcast.level` | `level.dimmer` | read/write | `set/level` ↔ `poll_broadcast` (whole network) |
+| `broadcast.{last_level,cct_level,vertical}` | `value` | read | `poll_broadcast` |
+| `scenes.<n>.level` | `level.dimmer` | read/write | `set/scene_level` ↔ `poll_scene/<n>` |
+| `scenes.<n>.active` | `indicator` | read | `poll_scene/<n>` |
+| `groups.<n>.level` | `level.dimmer` | read/write | `set/group_level` ↔ `poll_group/<n>` |
+| `groups.<n>.{last_level,cct_level,vertical}` | `value` | read | `poll_group/<n>` |
+| `devices.<n>.level` | `level.dimmer` | read | `poll_device/<n>/values` (monitoring) |
+| `devices.<n>.{cct_level,red,green,blue,white,hue,sat,…}` | colour | read | `poll_device/<n>/values` |
+| `devices.<n>.online` | `indicator.reachable` | read | `poll_device/<n>/propertys` |
+| `devices.<n>.{condition,battery_level,overheating,general_failure,…}` | health | read | `poll_device/<n>/propertys` |
+| `ungrouped.*` | `value` | read | `poll_ungrouped` |
 | `sensors.lux` | `value.brightness` | write | `set/light_sensor` |
 | `sensors.pir` | `switch` | write | `set/pir_sensor` |
-| `buttons.<n>.level` | `level.dimmer` | write | `set/button_level` |
-| `buttons.<n>.pressed` | `button` | write | `set/push_button_pressed` |
-| `buttons.<n>.released` | `button` | write | `set/push_button_released` |
+| `buttons.<n>.{level,pressed,released}` | `level.dimmer`/`button` | write | `set/button_level` / `set/push_button_*` |
 
-`scenes`, `groups` and `devices` are created on demand from the gateway's feedback.
-`sensors` and `buttons` are inputs the adapter injects; the number of virtual buttons is
-set with the **Injectable buttons** option (0 = none).
+`broadcast` (all lights), `scenes` and `groups` are **controllable** (writable `level`).
+`devices` and `ungrouped` are **monitoring only** — the gateway exposes no per-device set
+topic. `sensors` and `buttons` are inputs the adapter injects (`Injectable buttons` = count,
+0 = none).
 
 ## Limitations
 
@@ -94,6 +100,11 @@ set with the **Injectable buttons** option (0 = none).
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
+
+### 0.2.0 (2026-06-24)
+* (DutchmanNL) Rewrote the feedback parser for the gateway's real `get/poll_*` topics — live scene/group/device state (level, colour, online, condition, battery) auto-populates
+* (DutchmanNL) Whole-network `broadcast` control (`set/level`) replaces the previous `control.*` channel
+* (DutchmanNL) Removed the temporary "Log all incoming MQTT messages" toggle — inbound is logged at debug level only
 
 ### 0.1.1 (2026-06-24)
 * (DutchmanNL) Added "Log all incoming MQTT messages" option for setup/diagnostics

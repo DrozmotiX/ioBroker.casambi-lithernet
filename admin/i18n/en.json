@@ -14,7 +14,5 @@
 	"Percent (0-100 %)": "Percent (0-100 %)",
 	"Raw (0-254)": "Raw (0-254)",
 	"Injectable buttons": "Injectable buttons",
-	"Number of virtual buttons to create for injecting press/release events into Casambi (0 = none)": "Number of virtual buttons to create for injecting press/release events into Casambi (0 = none)",
-	"Log all incoming MQTT messages": "Log all incoming MQTT messages",
-	"Write every message received from the gateway to the adapter log (info level). Useful for setup/diagnostics; disable in normal operation.": "Write every message received from the gateway to the adapter log (info level). Useful for setup/diagnostics; disable in normal operation."
+	"Number of virtual buttons to create for injecting press/release events into Casambi (0 = none)": "Number of virtual buttons to create for injecting press/release events into Casambi (0 = none)"
 }

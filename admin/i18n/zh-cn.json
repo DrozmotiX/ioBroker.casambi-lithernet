@@ -5,7 +5,6 @@
 	"Gateway ID (topic segment)": "网关ID（主题段）",
 	"Injectable buttons": "可注射按钮",
 	"Listen address": "收听地址",
-	"Log all incoming MQTT messages": "记录所有传入的 MQTT 消息",
 	"MQTT broker": "MQTT 代理",
 	"Number of virtual buttons to create for injecting press/release events into Casambi (0 = none)": "创建用于将按下/释放事件注入 Casambi 的虚拟按钮数量（0 = 无）",
 	"Password (optional)": "密码（可选）",
@@ -15,6 +14,5 @@
 	"The <deviceId> set in the gateway web UI; topics are casambi/<id>/...": "网关Web UI中设置的<deviceId>；主题是 casambi/<id>/...",
 	"This adapter runs its own MQTT broker. Point the Lithernet Casambi gateway's MQTT client at this host and port. SSL is not supported by the gateway - use a trusted network.": "该适配器运行其自己的 MQTT 代理。将 Lithernet Casambi 网关的 MQTT 客户端指向此主机和端口。网关不支持 SSL - 使用受信任的网络。",
 	"Username (optional)": "用户名（可选）",
-	"Write every message received from the gateway to the adapter log (info level). Useful for setup/diagnostics; disable in normal operation.": "将从网关接收到的每条消息写入适配器日志（信息级别）。对于设置/诊断很有用；正常操作时禁用。",
 	"casambi-lithernet adapter settings": "casambi-lithernet的适配器设置"
 }

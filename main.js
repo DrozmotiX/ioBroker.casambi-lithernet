@@ -55,10 +55,11 @@ class CasambiLithernet extends utils.Adapter {
 			levelScale: this.config.levelScale === 'raw' ? 'raw' : 'percent',
 		};
 
-		// Seed the input-only states the gateway never reports back:
-		// the gateway's own luminaire (control), injected sensors and virtual buttons.
+		// Seed the writable/input states so they exist before any feedback arrives:
+		// network-wide broadcast level, injected sensors and virtual buttons.
+		// (scenes/groups/devices are created from the gateway's poll_* feedback.)
 		const seed = {
-			control: { level: 0, duration: this.cfg.defaultDuration },
+			broadcast: { level: 0 },
 			sensors: { lux: 0, pir: false },
 		};
 		const buttonCount = Math.min(255, Math.max(0, Number(this.config.buttonCount) || 0));
@@ -73,13 +74,7 @@ class CasambiLithernet extends utils.Adapter {
 		// Start the embedded MQTT broker.
 		this.broker = new CasambiBroker(
 			this,
-			{
-				bind,
-				port,
-				username: this.config.username || '',
-				password: this.config.password || '',
-				logAllMessages: !!this.config.logAllMessages,
-			},
+			{ bind, port, username: this.config.username || '', password: this.config.password || '' },
 			(topic, payload) => this.handleFeedback(topic, payload),
 		);
 
