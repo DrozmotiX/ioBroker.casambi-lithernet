@@ -141,6 +141,9 @@ topic. `sensors` and `buttons` are inputs the adapter injects (`Injectable butto
 	### **WORK IN PROGRESS**
 -->
 
+### 0.6.5 (2026-06-25)
+* (DutchmanNL) **Control-scene assignment moved to per-device dropdown states** (replaces the manual settings table): each ambiguous device gets a writable `devices.<address>.controlSceneSelect` whose admin dropdown lists its candidate scenes **by name** — choosing one assigns control **live** (no restart) and **survives restarts** (persisted in the state). The device list builds itself; single-candidate devices auto-map; `info.devicesNeedingControlScene` lists what still needs a choice
+
 ### 0.6.4 (2026-06-25)
 * (DutchmanNL) Fix: `controlScene` of an unresolved (multiple-scene) or re-assigned device now clears to `null` instead of keeping a stale lowest-id value — it always reflects the real control scene (or none). Read-only gating was already correct; this fixes only the displayed value
 * (DutchmanNL) The "control scene not set" warning is now **JSON** (`device`, `deviceId`, `address` tree key, `candidates` as `{sceneId, name}`) and is also published to **`info.devicesNeedingControlScene`** — readable, and tells you exactly which `sceneId` to assign

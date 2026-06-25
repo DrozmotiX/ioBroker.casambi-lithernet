@@ -1,8 +1,12 @@
 {
 	"common": {
 		"name": "casambi-lithernet",
-		"version": "0.6.4",
+		"version": "0.6.5",
 		"news": {
+			"0.6.5": {
+				"en": "Control-scene assignment is now done per device in the Objects view (the device list builds itself), replacing the manual settings table. Each ambiguous device (several candidate scenes) gets a writable controlSceneSelect dropdown of its candidate scenes by name; choosing one assigns control live (no restart) and survives restarts. Single-candidate devices auto-map; info.devicesNeedingControlScene lists what still needs a choice.",
+				"de": "Die Steuerszenen-Zuordnung erfolgt jetzt pro Gerät in der Objektansicht (die Geräteliste baut sich selbst auf) und ersetzt die manuelle Einstellungstabelle. Jedes mehrdeutige Gerät (mehrere Kandidatenszenen) erhält ein beschreibbares controlSceneSelect-Dropdown seiner Kandidatenszenen nach Namen; eine Auswahl weist die Steuerung sofort zu (ohne Neustart) und übersteht Neustarts. Geräte mit einer Kandidatenszene werden automatisch zugeordnet; info.devicesNeedingControlScene listet, was noch eine Auswahl benötigt."
+			},
 			"0.6.4": {
 				"en": "Fix: the controlScene state of an unresolved (multiple-scene) or re-assigned device now clears to null instead of keeping a stale lowest-id value. The 'control scene not set' warning is now JSON (device name + deviceId + address tree key + candidate scenes as {sceneId, name}) and is also published to info.devicesNeedingControlScene, so it is readable and tells you exactly which sceneId to assign.",
 				"de": "Fix: der controlScene-State eines nicht zugeordneten (Mehrfach-Szenen-) oder neu zugewiesenen Geräts wird jetzt auf null zurückgesetzt, statt einen veralteten niedrigsten-ID-Wert zu behalten. Die Warnung 'Steuerszene nicht gesetzt' ist jetzt JSON (Gerätename + deviceId + address-Baum-Schlüssel + Kandidatenszenen als {sceneId, name}) und wird zusätzlich nach info.devicesNeedingControlScene geschrieben, sodass sie lesbar ist und genau zeigt, welche sceneId zuzuweisen ist."
@@ -218,8 +222,7 @@
 		"cloudPassword": "",
 		"cloudSyncInterval": 60,
 		"cloudDeviceRange": "0-*",
-		"cloudSceneRange": "0-*",
-		"controlSceneMap": []
+		"cloudSceneRange": "0-*"
 	},
 	"objects": [],
 	"instanceObjects": [
