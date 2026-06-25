@@ -13,6 +13,8 @@ const jsonExplorer = require('iobroker-jsonexplorer');
 const stateAttr = require('./lib/state_attr.js');
 const CasambiBroker = require('./lib/broker.js');
 const casambi = require('./lib/casambi.js');
+const cloud = require('./lib/cloud.js');
+const cloudModel = require('./lib/cloudModel.js');
 
 /**
  * Turn a config name table ([{ id, name }, ...]) into an { "<id>": "<name>" } map,
@@ -22,7 +24,6 @@ const casambi = require('./lib/casambi.js');
  * @returns {Object<string, string>} index -> name map
  */
 function buildNameMap(rows) {
-	/** @type {Object<string, string>} */
 	const map = {};
 	if (Array.isArray(rows)) {
 		for (const row of rows) {
@@ -44,30 +45,32 @@ class CasambiLithernet extends utils.Adapter {
 			name: 'casambi-lithernet',
 		});
 
-		this.broker = /** @type {CasambiBroker|null} */ (null);
-		this.cfg = /** @type {{gatewayId: string, defaultDuration: number, levelScale: string}} */ ({
+		this.broker = null;
+		this.cfg = {
 			gatewayId: '0',
 			defaultDuration: 0,
 			levelScale: 'percent',
-		});
-		/** @type {{scenes: Object<string,string>, groups: Object<string,string>, devices: Object<string,string>}} */
+		};
 		this.names = { scenes: {}, groups: {}, devices: {} };
 		this.hasNames = false;
 		// Padded indices of device slots known to be empty placeholders (node_type 0); their
 		// values messages are ignored so phantom devices.<n> are not created.
-		this.placeholderDevices = /** @type {Set<string>} */ (new Set());
+		this.placeholderDevices = new Set();
 		// Padded indices actually seen in gateway feedback this run, per channel - used by the
 		// optional orphan cleanup to delete objects whose entity no longer exists.
 		this.seen = {
-			devices: /** @type {Set<string>} */ (new Set()),
-			scenes: /** @type {Set<string>} */ (new Set()),
-			groups: /** @type {Set<string>} */ (new Set()),
+			devices: new Set(),
+			scenes: new Set(),
+			groups: new Set(),
 		};
-		this.orphanTimer = /** @type {ioBroker.Timeout | undefined} */ (undefined);
+		this.orphanTimer = undefined;
 		// Device indices whose `level` has been forced read-only. Per-device control is impossible
 		// over MQTT (no set topic), but `level` shares the writable control-channel leaf, so it is
 		// overridden to write:false once per device. Cleared when a device's tree is removed.
-		this.deviceLevelReadonly = /** @type {Set<string>} */ (new Set());
+		this.deviceLevelReadonly = new Set();
+		// Cloud enrichment (optional): deviceId -> unit uuid, used to route live MQTT feedback
+		// onto the uuid-keyed device tree built from the cloud (live routing = next step).
+		this.deviceIdToUuid = {};
 
 		this.on('ready', this.onReady.bind(this));
 		this.on('stateChange', this.onStateChange.bind(this));
@@ -142,9 +145,13 @@ class CasambiLithernet extends utils.Adapter {
 			`Ready - point the gateway's MQTT client at this host:${port}, topic prefix "casambi/${gatewayId}/" (no SSL).`,
 		);
 
+		// Optional cloud enrichment: build the named/structured object tree from the Casambi
+		// cloud (key-free, own credentials). Mapping live MQTT values onto it is the next step.
+		await this.bootstrapCloud();
+
 		// Optional orphan cleanup: after enough time to capture a full poll cycle, delete
 		// scene/group/device objects whose entity no longer exists on the gateway.
-		if (this.config.removeOrphans) {
+		if (this.config.removeOrphans && !this.config.cloudEnabled) {
 			const delayMs = Math.max(30, Number(this.config.orphanScanDelay) || 120) * 1000;
 			this.orphanTimer = this.setTimeout(() => {
 				this.orphanTimer = undefined;
@@ -155,12 +162,129 @@ class CasambiLithernet extends utils.Adapter {
 	}
 
 	/**
+	 * Optional cloud enrichment: pull the network structure from the Casambi cloud
+	 * (key-free, own credentials) and build the uuid-keyed device + scene tree.
+	 *
+	 * @returns {Promise<void>}
+	 */
+	async bootstrapCloud() {
+		if (!this.config.cloudEnabled) {
+			return;
+		}
+		const uuid = String(this.config.cloudUuid || '').trim();
+		const password = this.config.cloudPassword || '';
+		if (!uuid || !password) {
+			this.log.warn('Cloud enrichment is enabled but the network UUID or password is missing - skipping.');
+			return;
+		}
+		try {
+			this.log.info('Cloud enrichment: fetching network metadata...');
+			const data = await cloud.fetchNetworkData(uuid, password);
+			const parsed = cloudModel.parseNetwork(data.network);
+			this.deviceIdToUuid = parsed.deviceIdToUuid;
+			await this.buildCloudTree(parsed);
+			this.log.info(
+				`Cloud enrichment: built ${parsed.devices.length} devices and ${parsed.scenes.length} scenes from network "${data.name}".`,
+			);
+		} catch (error) {
+			this.log.error(`Cloud enrichment failed: ${error.message}`);
+		}
+	}
+
+	/**
+	 * Create the object tree from parsed cloud metadata: devices keyed by uuid (stable),
+	 * scenes keyed by padded sceneId (matching the MQTT key for later live mapping).
+	 *
+	 * @param {{devices: Array, scenes: Array}} parsed - output of cloudModel.parseNetwork
+	 * @returns {Promise<void>}
+	 */
+	async buildCloudTree(parsed) {
+		for (const d of parsed.devices) {
+			if (!d.uuid) {
+				continue;
+			}
+			const base = `devices.${d.uuid}`;
+			const name = d.name || `Device ${d.deviceId}`;
+			await this.setObjectNotExistsAsync(base, {
+				type: 'channel',
+				common: { name },
+				native: { deviceId: d.deviceId, uuid: d.uuid, address: d.address, type: d.type },
+			});
+			await this.extendObjectAsync(base, { common: { name } });
+			await this.ensureCloudState(`${base}.deviceId`, 'Device ID', 'number', 'value', false, d.deviceId);
+			await this.ensureCloudState(`${base}.address`, 'BLE address', 'string', 'info.address', false, d.address);
+			await this.ensureCloudState(`${base}.type`, 'Fixture type', 'number', 'value', false, d.type);
+			await this.ensureCloudState(
+				`${base}.controlScene`,
+				'Control scene',
+				'number',
+				'value',
+				false,
+				d.controlScene,
+			);
+			// Live values (read-only) - populated by MQTT in the next step.
+			await this.ensureCloudState(`${base}.level`, 'Level', 'number', 'level.dimmer', false);
+			await this.ensureCloudState(`${base}.on`, 'On', 'boolean', 'switch.light', false);
+		}
+		for (const s of parsed.scenes) {
+			const base = `scenes.${casambi.padIndex(s.sceneId)}`;
+			const name = s.name || `Scene ${s.sceneId}`;
+			await this.setObjectNotExistsAsync(base, {
+				type: 'channel',
+				common: { name },
+				native: { sceneId: s.sceneId },
+			});
+			await this.extendObjectAsync(base, { common: { name } });
+			// Control: recall the scene (writable). Live `active` populated by MQTT next step.
+			await this.ensureCloudState(`${base}.level`, 'Level', 'number', 'level.dimmer', true);
+			await this.ensureCloudState(`${base}.active`, 'Active', 'boolean', 'indicator', false);
+			await this.ensureCloudState(
+				`${base}.members`,
+				'Members (device IDs)',
+				'string',
+				'json',
+				false,
+				JSON.stringify(s.members),
+			);
+		}
+	}
+
+	/**
+	 * Create a state object if missing and optionally set its value.
+	 *
+	 * @param {string} id - state id
+	 * @param {string} name - display name
+	 * @param {string} type - common.type
+	 * @param {string} role - common.role
+	 * @param {boolean} write - writable?
+	 * @param {*} [val] - value to set (skipped if undefined/null)
+	 * @returns {Promise<void>}
+	 */
+	async ensureCloudState(id, name, type, role, write, val) {
+		await this.setObjectNotExistsAsync(id, {
+			type: 'state',
+			common: { name, type, role, read: true, write: !!write },
+			native: {},
+		});
+		if (val !== undefined && val !== null) {
+			await this.setState(id, { val, ack: true });
+		}
+	}
+
+	/**
 	 * Handle a feedback message published by the gateway (get/...).
 	 *
 	 * @param {string} topic - full MQTT topic
 	 * @param {object} payload - JSON-parsed payload
 	 */
 	async handleFeedback(topic, payload) {
+		// When cloud enrichment is on, the object tree is built from the cloud (uuid-keyed) and
+		// routing live MQTT values onto it is the next step - so don't let MQTT build a parallel
+		// (deviceId-keyed) tree in the meantime.
+		if (this.config.cloudEnabled) {
+			return;
+		}
+
 		// A deleted node: drop its object tree and remember it as a placeholder.
 		if (casambi.isNodeDeleted(topic, this.cfg)) {
 			if (payload && payload.device != null) {
@@ -198,7 +322,7 @@ class CasambiLithernet extends utils.Adapter {
 			return;
 		}
 		// Remember which scene/group/device indices actually exist (for orphan cleanup).
-		for (const channel of /** @type {Array<'devices'|'scenes'|'groups'>} */ (['devices', 'scenes', 'groups'])) {
+		for (const channel of ['devices', 'scenes', 'groups']) {
 			if (tree[channel]) {
 				for (const index of Object.keys(tree[channel])) {
 					this.seen[channel].add(index);
@@ -261,12 +385,12 @@ class CasambiLithernet extends utils.Adapter {
 		try {
 			const objects = await this.getAdapterObjectsAsync();
 			const prefix = `${this.namespace}.`;
-			const channels = /** @type {Array<'devices'|'scenes'|'groups'>} */ (['devices', 'scenes', 'groups']);
+			const channels = ['devices', 'scenes', 'groups'];
 			const removed = [];
 			const handled = new Set();
 			for (const fullId of Object.keys(objects)) {
 				const rel = fullId.slice(prefix.length).split('.');
-				const channel = /** @type {'devices'|'scenes'|'groups'} */ (rel[0]);
+				const channel = rel[0];
 				if (rel.length >= 2 && channels.includes(channel)) {
 					const channelId = `${channel}.${rel[1]}`;
 					if (!handled.has(channelId)) {
@@ -332,7 +456,7 @@ class CasambiLithernet extends utils.Adapter {
 	 * @param {object} tree - parsed feedback tree (mutated in place)
 	 */
 	applyNames(tree) {
-		const channels = /** @type {Array<'scenes'|'groups'|'devices'>} */ (['scenes', 'groups', 'devices']);
+		const channels = ['scenes', 'groups', 'devices'];
 		for (const channel of channels) {
 			const map = this.names[channel];
 			if (!tree[channel] || !map) {

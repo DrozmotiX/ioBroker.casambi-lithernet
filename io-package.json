@@ -1,8 +1,12 @@
 {
 	"common": {
 		"name": "casambi-lithernet",
-		"version": "0.3.3",
+		"version": "0.4.0",
 		"news": {
+			"0.4.0": {
+				"en": "Optional cloud enrichment (off by default): read the network structure (unit/scene/group names, members, capabilities) from the Casambi cloud using your own network credentials - no developer API key. Builds a uuid-keyed device tree and derives each device's control scene.",
+				"de": "Optionale Cloud-Anreicherung (standardmäßig aus): liest die Netzwerkstruktur (Namen von Geräten/Szenen/Gruppen, Mitglieder, Fähigkeiten) aus der Casambi-Cloud mit den eigenen Netzwerk-Zugangsdaten - ohne Entwickler-API-Schlüssel. Erstellt einen UUID-basierten Gerätebaum und ermittelt die Steuerszene jedes Geräts."
+			},
 			"0.3.3": {
 				"en": "Device states are now read-only (no per-device control over MQTT) and each device exposes a derived on/off state for downstream consumers. Adds an ADR for the state model and cloud-enrichment strategy.",
 				"de": "Gerätezustände sind jetzt schreibgeschützt (keine Einzelgerätesteuerung über MQTT) und jedes Gerät stellt einen abgeleiteten Ein/Aus-Zustand für nachgelagerte Verbraucher bereit. Fügt eine ADR für das Zustandsmodell und die Cloud-Anreicherungsstrategie hinzu."
@@ -155,10 +159,12 @@
 		]
 	},
 	"encryptedNative": [
-		"password"
+		"password",
+		"cloudPassword"
 	],
 	"protectedNative": [
-		"password"
+		"password",
+		"cloudPassword"
 	],
 	"native": {
 		"bind": "0.0.0.0",
@@ -173,7 +179,10 @@
 		"orphanScanDelay": 120,
 		"sceneNames": [],
 		"groupNames": [],
-		"deviceNames": []
+		"deviceNames": [],
+		"cloudEnabled": false,
+		"cloudUuid": "",
+		"cloudPassword": ""
 	},
 	"objects": [],
 	"instanceObjects": [

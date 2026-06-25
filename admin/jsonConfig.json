@@ -149,6 +149,40 @@
 					"xs": 12, "sm": 12, "md": 4, "lg": 4, "xl": 4
 				}
 			}
+		},
+		"cloud": {
+			"type": "panel",
+			"label": "Cloud",
+			"items": {
+				"_cloudHint": {
+					"type": "staticText",
+					"text": "Optional: read the network structure (unit/scene/group names, members, capabilities) from the Casambi cloud using your own network credentials. No developer API key required. Off by default; when off, objects are discovered from MQTT only.",
+					"newLine": true,
+					"xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12
+				},
+				"cloudEnabled": {
+					"type": "checkbox",
+					"label": "Enable cloud enrichment",
+					"newLine": true,
+					"xs": 12, "sm": 12, "md": 6, "lg": 6, "xl": 6
+				},
+				"cloudUuid": {
+					"type": "text",
+					"label": "Network UUID",
+					"help": "Casambi app: More -> Network Setup -> iBeacon -> UUID.",
+					"hidden": "!data.cloudEnabled",
+					"newLine": true,
+					"xs": 12, "sm": 12, "md": 6, "lg": 4, "xl": 4
+				},
+				"cloudPassword": {
+					"type": "password",
+					"label": "Network password",
+					"help": "The network (admin) password set when the network was created or shared. Stored encrypted.",
+					"visible": true,
+					"hidden": "!data.cloudEnabled",
+					"xs": 12, "sm": 12, "md": 6, "lg": 4, "xl": 4
+				}
+			}
 		}
 	}
 }
