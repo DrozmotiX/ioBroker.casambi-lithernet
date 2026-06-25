@@ -156,13 +156,13 @@
 			"items": {
 				"_cloudHint": {
 					"type": "staticText",
-					"text": "Optional: read the network structure (unit/scene/group names, members, capabilities) from the Casambi cloud using your own network credentials. No developer API key required. Off by default; when off, objects are discovered from MQTT only.",
+					"text": "The Casambi cloud is the source of truth for device/scene structure, names and capabilities (own network credentials, no developer API key). It is required - it provides the catalog; live state and control come from the MQTT gateway (optional) on top. Control needs one single-member scene per device in the Casambi app.",
 					"newLine": true,
 					"xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12
 				},
 				"cloudEnabled": {
 					"type": "checkbox",
-					"label": "Enable cloud enrichment",
+					"label": "Use Casambi cloud (required)",
 					"newLine": true,
 					"xs": 12, "sm": 12, "md": 6, "lg": 6, "xl": 6
 				},
@@ -180,6 +180,16 @@
 					"help": "The network (admin) password set when the network was created or shared. Stored encrypted.",
 					"visible": true,
 					"hidden": "!data.cloudEnabled",
+					"xs": 12, "sm": 12, "md": 6, "lg": 4, "xl": 4
+				},
+				"cloudSyncInterval": {
+					"type": "number",
+					"label": "Auto-sync every (minutes)",
+					"help": "Re-read the cloud catalog on this interval (0 = only at start / on demand). Trigger an immediate sync via the state control.syncNow; the last run is shown in info.lastSync.",
+					"min": 0,
+					"max": 1440,
+					"hidden": "!data.cloudEnabled",
+					"newLine": true,
 					"xs": 12, "sm": 12, "md": 6, "lg": 4, "xl": 4
 				}
 			}

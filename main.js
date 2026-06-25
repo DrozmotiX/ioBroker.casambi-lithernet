@@ -71,6 +71,10 @@ class CasambiLithernet extends utils.Adapter {
 		// Cloud enrichment (optional): deviceId -> unit uuid, used to route live MQTT feedback
 		// onto the uuid-keyed device tree built from the cloud (live routing = next step).
 		this.deviceIdToUuid = {};
+		// True once the cloud catalog has been built; gates MQTT so it doesn't build a parallel
+		// (deviceId-keyed) tree. If the cloud fails, this stays false and MQTT discovery runs.
+		this.cloudActive = false;
+		this.syncTimer = undefined;
 
 		this.on('ready', this.onReady.bind(this));
 		this.on('stateChange', this.onStateChange.bind(this));
@@ -145,9 +149,28 @@ class CasambiLithernet extends utils.Adapter {
 			`Ready - point the gateway's MQTT client at this host:${port}, topic prefix "casambi/${gatewayId}/" (no SSL).`,
 		);
 
-		// Optional cloud enrichment: build the named/structured object tree from the Casambi
-		// cloud (key-free, own credentials). Mapping live MQTT values onto it is the next step.
+		// Cloud catalog (required source of truth for structure/names). Create the sync + coverage
+		// states, build the tree, then schedule periodic re-sync. MQTT live mapping is the next step.
+		if (this.config.cloudEnabled) {
+			await this.ensureCloudState('info.lastSync', 'Last cloud sync', 'string', 'date', false);
+			await this.ensureCloudState(
+				'info.devicesWithoutControlScene',
+				'Loads without a control scene',
+				'string',
+				'json',
+				false,
+			);
+			await this.ensureCloudState(
+				'info.devicesWithMultipleControlScenes',
+				'Loads with multiple control scenes',
+				'string',
+				'json',
+				false,
+			);
+			await this.ensureCloudState('control.syncNow', 'Sync cloud now', 'boolean', 'button', true);
+		}
 		await this.bootstrapCloud();
+		this.scheduleSync();
 
 		// Optional orphan cleanup: after enough time to capture a full poll cycle, delete
 		// scene/group/device objects whose entity no longer exists on the gateway.
@@ -169,26 +192,79 @@ class CasambiLithernet extends utils.Adapter {
 	 */
 	async bootstrapCloud() {
 		if (!this.config.cloudEnabled) {
+			this.log.warn(
+				'Cloud is the required catalog source but is disabled - falling back to MQTT-only discovery.',
+			);
 			return;
 		}
 		const uuid = String(this.config.cloudUuid || '').trim();
 		const password = this.config.cloudPassword || '';
 		if (!uuid || !password) {
-			this.log.warn('Cloud enrichment is enabled but the network UUID or password is missing - skipping.');
+			this.log.error(
+				'Cloud is enabled but the network UUID or password is missing - configure them in the Cloud tab.',
+			);
 			return;
 		}
 		try {
-			this.log.info('Cloud enrichment: fetching network metadata...');
+			this.log.info('Cloud: fetching network metadata...');
 			const data = await cloud.fetchNetworkData(uuid, password);
 			const parsed = cloudModel.parseNetwork(data.network);
 			this.deviceIdToUuid = parsed.deviceIdToUuid;
 			await this.buildCloudTree(parsed);
+			await this.reportCoverage(parsed.coverage);
+			this.cloudActive = true;
+			const stamp = new Date().toISOString();
+			await this.setState('info.lastSync', stamp, true);
 			this.log.info(
-				`Cloud enrichment: built ${parsed.devices.length} devices and ${parsed.scenes.length} scenes from network "${data.name}".`,
+				`Cloud: synced ${parsed.devices.length} devices and ${parsed.scenes.length} scenes from network "${data.name}" at ${stamp}.`,
 			);
 		} catch (error) {
-			this.log.error(`Cloud enrichment failed: ${error.message}`);
+			this.log.error(`Cloud sync failed: ${error.message}`);
 		}
+	}
+
+	/**
+	 * Publish scene-coverage diagnostics (devices with no / multiple control scenes) to
+	 * info states and the log, to troubleshoot the one-scene-per-device setup.
+	 *
+	 * @param {{none: Array, multiple: Array}} coverage - from cloudModel.parseNetwork
+	 * @returns {Promise<void>}
+	 */
+	async reportCoverage(coverage) {
+		await this.setState('info.devicesWithoutControlScene', JSON.stringify(coverage.none), true);
+		await this.setState('info.devicesWithMultipleControlScenes', JSON.stringify(coverage.multiple), true);
+		if (coverage.none.length) {
+			this.log.warn(
+				`Loads with NO control scene (uncontrollable - add a single-member scene): ${coverage.none
+					.map(d => `${d.deviceId} "${d.name}"`)
+					.join(', ')}`,
+			);
+		}
+		if (coverage.multiple.length) {
+			this.log.warn(
+				`Loads with MULTIPLE control scenes (ambiguous): ${coverage.multiple
+					.map(d => `${d.deviceId} "${d.name}" [${d.scenes.join('/')}]`)
+					.join(', ')}`,
+			);
+		}
+	}
+
+	/**
+	 * (Re)schedule the periodic cloud re-sync from the configured interval (minutes; 0 = off).
+	 *
+	 * @returns {void}
+	 */
+	scheduleSync() {
+		if (this.syncTimer) {
+			this.clearInterval(this.syncTimer);
+			this.syncTimer = undefined;
+		}
+		const minutes = Math.max(0, Number(this.config.cloudSyncInterval) || 0);
+		if (!this.config.cloudEnabled || minutes <= 0) {
+			return;
+		}
+		this.syncTimer = this.setInterval(() => this.bootstrapCloud(), minutes * 60 * 1000);
+		this.log.debug(`Cloud auto-sync scheduled every ${minutes} min.`);
 	}
 
 	/**
@@ -278,10 +354,10 @@ class CasambiLithernet extends utils.Adapter {
 	 * @param {object} payload - JSON-parsed payload
 	 */
 	async handleFeedback(topic, payload) {
-		// When cloud enrichment is on, the object tree is built from the cloud (uuid-keyed) and
-		// routing live MQTT values onto it is the next step - so don't let MQTT build a parallel
-		// (deviceId-keyed) tree in the meantime.
-		if (this.config.cloudEnabled) {
+		// Once the cloud catalog is built (uuid-keyed), routing live MQTT values onto it is the
+		// next step - so don't let MQTT build a parallel (deviceId-keyed) tree in the meantime.
+		// If the cloud failed/disabled, cloudActive is false and MQTT discovery runs as fallback.
+		if (this.cloudActive) {
 			return;
 		}
 
@@ -480,7 +556,16 @@ class CasambiLithernet extends utils.Adapter {
 	 * @param {ioBroker.State | null | undefined} state - State object
 	 */
 	onStateChange(id, state) {
-		if (!state || state.ack || !this.broker) {
+		if (!state || state.ack) {
+			return;
+		}
+		// Manual cloud re-sync trigger (button).
+		if (id.endsWith('.control.syncNow') && state.val) {
+			this.log.info('Manual cloud sync requested.');
+			this.bootstrapCloud().finally(() => this.setState(id, { val: false, ack: true }));
+			return;
+		}
+		if (!this.broker) {
 			return;
 		}
 		const parts = this.parseStateId(id);
@@ -528,6 +613,10 @@ class CasambiLithernet extends utils.Adapter {
 			if (this.orphanTimer) {
 				this.clearTimeout(this.orphanTimer);
 				this.orphanTimer = undefined;
+			}
+			if (this.syncTimer) {
+				this.clearInterval(this.syncTimer);
+				this.syncTimer = undefined;
 			}
 			if (this.broker) {
 				await this.broker.stop();

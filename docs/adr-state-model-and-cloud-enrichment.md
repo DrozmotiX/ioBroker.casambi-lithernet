@@ -88,4 +88,53 @@ trivial).
 
 ## Status
 - §2 (state model): implemented + unit-tested in this PR.
-- §3/§4: proposed; cloud API data exploration is the next step.
+- §3/§4: cloud read proven + cloud-bootstrap module implemented (uuid-keyed tree, controlScene, deviceId->uuid map).
+
+---
+
+# Refined workflow (2026-06-25, owner-confirmed)
+
+The cloud role is upgraded from "optional enrichment" to **the mandatory catalog**; the
+gateway becomes the **optional live/control plane**.
+
+## Roles & precedence
+- **Cloud (`api.casambi.com`, key-free) = MANDATORY catalog.** Source of truth for device
+  structure, names, scene/group definitions + members, button->scene wiring, capabilities.
+  It is **request/response only — no push, and carries NO live state** (verified: unit objects
+  hold config only). Refreshed on start and on a schedule.
+- **MQTT gateway = OPTIONAL live/control plane.** Live `level/on/active` (passive ~1-2s push)
+  and control (scene recall). **When a gateway is present it takes precedence** over the cloud
+  for live/control ("you bought it for a reason"). Without it: catalog only (no real-time, no
+  control) until the developer API.
+- **Developer API (later, needs key) = second live source** (WebSocket push + control); slots
+  in under the selectable priority.
+- **Priority setting (portal):** selects the preferred *live/control* source (MQTT now,
+  dev-API later). Structure + names are **always** cloud regardless.
+
+## Data source comparison (for the user instructions)
+| Data | Cloud (key-free) | MQTT gateway | Developer API (later, key) |
+|---|---|---|---|
+| Unit list, names, uuid, type | source of truth | ids only | yes |
+| Scene/group defs, names, members, button->scene | source of truth | ids/levels only | yes |
+| Capabilities (fixture) | yes | heuristic | yes |
+| Live device level / on | NO (config only) | yes (~1-2s push) | yes (WS) |
+| Live scene active | NO | yes (real-time) | yes |
+| Control (recall/dim) | NO | yes (scene recall) | yes |
+| Cadence | poll: start + every X min | continuous push | continuous WS |
+
+## Build backlog (this workflow)
+1. **Cloud mandatory** — adapter requires UUID + network password; clear error if missing.
+2. **Sync** — poll at start (done) + writable `control.syncNow` state + `info.lastSync` state +
+   configurable auto-sync interval (every X min).
+3. **Scene-coverage diagnostics** (adapter settings) — list devices with **no** control scene
+   (uncontrollable) or **multiple** (ambiguous), for troubleshooting the 1-scene-per-device setup.
+4. **Live MQTT mapping** — route passive `poll_*` onto the uuid tree via `deviceId->uuid`
+   (`level/on/active`), MQTT-wins precedence. (The currently-guarded next step.)
+5. **Mapping view** (separate admin tab) — show cloud<->MQTT mapping, customizable.
+6. **Docs** — the comparison table above + cadence, in README/instructions. "Currently cloud
+   (api) + MQTT; developer API added later if a key is obtained."
+
+## Setup requirement (documented)
+Per-device control is scene-only, so **one single-member scene must be created per device** in
+the Casambi app. The adapter derives each device's `controlScene` from these; the diagnostics
+(item 3) surface devices missing one or with several.

@@ -102,9 +102,11 @@ topic. `sensors` and `buttons` are inputs the adapter injects (`Injectable butto
 -->
 
 ### 0.4.0 (2026-06-25)
-* (DutchmanNL) Optional cloud enrichment (off by default): read the network structure from the Casambi cloud using your own network credentials (UUID + network password) - no developer API key required
+* (DutchmanNL) Casambi cloud as the catalog source of truth: reads the network structure (names, scenes, groups, capabilities) using your own network credentials (UUID + network password) - no developer API key required
 * (DutchmanNL) New "Cloud" settings tab; the network password is stored encrypted (encryptedNative/protectedNative)
 * (DutchmanNL) Builds a uuid-keyed device tree with names/capabilities and derives each device's single-member control scene; live MQTT mapping follows in a later step
+* (DutchmanNL) Sync: poll at start + configurable auto-sync interval + `control.syncNow` button + `info.lastSync`
+* (DutchmanNL) Scene-coverage diagnostics: `info.devicesWithoutControlScene` / `info.devicesWithMultipleControlScenes` (+ log warnings) to troubleshoot the one-scene-per-device setup
 
 ### 0.3.3 (2026-06-25)
 * (DutchmanNL) Device states are now read-only (the gateway has no per-device set topic over MQTT)
