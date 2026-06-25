@@ -84,9 +84,12 @@ Casambi app. The adapter derives each device's control scene and reports gaps in
 3. In the gateway's web UI, enable **MQTT mode** and point its MQTT client at
    `<ioBroker-host>:<port>` (and the credentials, if you set any).
 4. Once the gateway connects, `info.connection` turns green. To receive **feedback**
-   (scene/group/device state), the gateway must be set to **Polling Method = active** in its
-   own web UI, with the number of scenes/groups/devices to query configured. The
-   `broadcast`, `scenes`, `groups`, `devices` and `ungrouped` trees then populate live.
+   (scene/group/device state), set the gateway's **Polling Method** in its own web UI.
+   **`passive` is recommended** — it listens to the Casambi BLE advertisements and **pushes**
+   state on change (sub-second, and it discovers the whole mesh). `active` cyclically polls a
+   configured count instead (~20 s, slower, and undercounts the mesh if the device count is set
+   too low). Either way the `broadcast`, `scenes`, `groups`, `devices` and `ungrouped` trees
+   populate live; see **Control & state synchronisation** below for why `passive` matters.
 5. **Cloud (catalog):** in the **Cloud** tab enter your **Network UUID** (Casambi app → *More →
    Network Setup → iBeacon → UUID*) and **network password** (stored encrypted). The catalog is
    built on start and re-synced on the configured interval or on demand via `control.syncNow`
@@ -160,6 +163,57 @@ readback is the **eyes** (confirmed state). They are independent channels, which
 the reported state stays trustworthy even though control happens via a scene. A downstream
 consumer (e.g. an alias' *Current*) should bind to the `ack:true` device states.
 
+**Source-independent state.** Because the readback reflects the *mesh*, the reported state is
+correct no matter **how** the light was changed — the Casambi app, a wall switch, a KNX/Casambi
+bridge, another scene, or this adapter. And since control is an **absolute** scene recall (`on` =
+recall at full, `off` = recall at level 0), a command always lands correctly regardless of the
+prior state: if a light is on and you send `off`, it turns off. There is no toggle and no need to
+know the previous state.
+
+## Per-device control: setup
+
+Per-device control is **scene-only** (the gateway has no per-device set topic), so each
+controllable device needs **one single-member scene** — a Casambi scene whose only member is
+that device. Setup:
+
+1. **Create one single-member scene per device** in the **Casambi app** (a scene that contains
+   exactly that one luminaire/relay). Naming it clearly (e.g. `_LivingRoom-Spot`) makes the next
+   step easier.
+2. **Sync the cloud catalog** (Cloud tab / `control.syncNow`). The adapter discovers each
+   device's candidate control scenes.
+3. **Assign the control scene:**
+   - A device with **exactly one** single-member scene is mapped **automatically** — its
+     `devices.<address>.level`/`.on` become writable immediately.
+   - A device with **several** candidate scenes stays read-only until you choose one: open
+     **Objects → `casambi-lithernet.<instance>.devices.<address>`** and set the
+     **`controlSceneSelect`** dropdown to the right scene (by name). The choice applies
+     instantly and survives restarts. `info.devicesNeedingControlScene` lists everything still
+     awaiting a choice.
+4. **Control** the device by writing `devices.<address>.on` (or `.level`). The write recalls the
+   assigned scene; the confirmed state comes back on the device states (see above). `devices.<n>.controlScene`
+   shows which scene currently controls each device (`null` = unresolved/uncontrollable).
+
+> A control scene **must be single-member** so a write only affects that one device. The adapter
+> only offers single-member scenes as candidates for exactly this reason.
+
+## Troubleshooting
+
+- **A device's `level`/`on` is read-only (can't control it).** It has **no** single-member
+  control scene, or **several** and none picked yet. Create one in the app, or pick one in the
+  device's `controlSceneSelect` dropdown. Check `info.devicesNeedingControlScene` and the warning
+  in the log (it names each device + its candidate scenes).
+- **State doesn't update / is stale.** Check `info.connection` is green (gateway connected) and
+  the gateway **Polling Method** is `passive` (or `active`). In `passive`, idle devices only
+  report **on change** — that is expected; trigger a change to see an update.
+- **A re-sync fixed something on its own.** A cloud re-sync (`control.syncNow`) re-asserts each
+  device's resolved control scene and writability; if a state looks wrong, a re-sync is a safe
+  reset.
+- **Sending `off` seems to do nothing.** Confirm the device actually has a resolved
+  `controlScene` (not `null`) and that its control scene is genuinely single-member; a
+  multi-member scene would move several devices and is intentionally not offered.
+- **Cloud sync fails (`info.lastSync` not advancing).** Re-check the **Network UUID** (the short
+  network id, not the app iBeacon UUID) and **network password** in the Cloud tab.
+
 ## Limitations
 
 - Individual `devices.<n>` are **monitoring only** – the gateway exposes no per-device set
@@ -175,7 +229,7 @@ consumer (e.g. an alias' *Current*) should bind to the `ack:true` device states.
 -->
 
 ### 0.6.7 (2026-06-25)
-* (DutchmanNL) Docs: new **Control & state synchronisation** section — control goes out as a scene recall (`ack:false` command), confirmation comes back as a real MQTT device readback (`ack:true`, mesh-measured), pushed directly in `passive` mode (~0.4–1.5 s); watch the device `level`/`on` states, not scene `active`
+* (DutchmanNL) Docs: new **Control & state synchronisation** section — control = scene recall (`ack:false`), confirmation = real MQTT device readback (`ack:true`, mesh-measured), pushed directly in `passive` (~0.4–1.5 s); state is correct no matter how the light was changed (app/wall/KNX/scene) and absolute on/off always works. Added **Per-device control: setup** (one single-member scene per device + assignment) and **Troubleshooting**; Setup now recommends `passive` polling
 
 ### 0.6.6 (2026-06-25)
 * (DutchmanNL) Fix: a controllable device's `on` no longer reverts to **read-only after being switched** — the live MQTT readback ran `level`/`on` through jsonExplorer, which re-applied `state_attr`'s `write:false` for `on` and clobbered the per-device writability. `level`/`on` **values** are now set directly (`setState`), leaving writability untouched
