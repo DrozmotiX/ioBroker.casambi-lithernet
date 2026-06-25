@@ -35,6 +35,20 @@ function buildNameMap(rows) {
 	return map;
 }
 
+/**
+ * Recognise a cloud device-control write: devices.<uuid>.level / .on (uuid has no dots).
+ *
+ * @param {string} id - full state id
+ * @returns {{uuid: string, leaf: string}|null} parsed control ref, or null
+ */
+function parseDeviceControl(id) {
+	const rel = id.split('.').slice(2);
+	if (rel.length === 3 && rel[0] === 'devices' && (rel[2] === 'level' || rel[2] === 'on')) {
+		return { uuid: rel[1], leaf: rel[2] };
+	}
+	return null;
+}
+
 class CasambiLithernet extends utils.Adapter {
 	/**
 	 * @param {Partial<utils.AdapterOptions>} [options] - Adapter options
@@ -75,6 +89,9 @@ class CasambiLithernet extends utils.Adapter {
 		// (deviceId-keyed) tree. If the cloud fails, this stays false and MQTT discovery runs.
 		this.cloudActive = false;
 		this.syncTimer = undefined;
+		// uuid -> control sceneId, ONLY for devices with exactly one single-member control scene.
+		// Those devices get writable level/on that recall the scene (see onStateChange).
+		this.deviceControlScene = {};
 
 		this.on('ready', this.onReady.bind(this));
 		this.on('stateChange', this.onStateChange.bind(this));
@@ -286,6 +303,7 @@ class CasambiLithernet extends utils.Adapter {
 	 * @returns {Promise<void>}
 	 */
 	async buildCloudTree(parsed) {
+		this.deviceControlScene = {};
 		for (const d of parsed.devices) {
 			if (!d.uuid) {
 				continue;
@@ -309,9 +327,19 @@ class CasambiLithernet extends utils.Adapter {
 				false,
 				d.controlScene,
 			);
-			// Live values (read-only) - populated by MQTT in the next step.
-			await this.ensureCloudState(`${base}.level`, 'Level', 'number', 'level.dimmer', false);
-			await this.ensureCloudState(`${base}.on`, 'On', 'boolean', 'switch.light', false);
+			// Per-device control is scene-only. If a device has EXACTLY ONE control scene the
+			// mapping is unambiguous, so make level/on WRITABLE - a write recalls that scene
+			// (see onStateChange). Devices with none/multiple stay read-only. The value itself is
+			// the live readback (filled by MQTT in the next step).
+			const controllable = Array.isArray(d.controlScenes) && d.controlScenes.length === 1;
+			if (controllable) {
+				this.deviceControlScene[d.uuid] = d.controlScenes[0];
+			}
+			await this.ensureCloudState(`${base}.level`, 'Level', 'number', 'level.dimmer', controllable);
+			await this.ensureCloudState(`${base}.on`, 'On', 'boolean', 'switch.light', controllable);
+			// Keep write-ability in sync on re-sync (scene added/removed since last run).
+			await this.extendObjectAsync(`${base}.level`, { common: { write: controllable } });
+			await this.extendObjectAsync(`${base}.on`, { common: { write: controllable } });
 		}
 		for (const s of parsed.scenes) {
 			const base = `scenes.${casambi.padIndex(s.sceneId)}`;
@@ -577,6 +605,24 @@ class CasambiLithernet extends utils.Adapter {
 			return;
 		}
 		if (!this.broker) {
+			return;
+		}
+		// Cloud device control: a writable device level/on (single-control-scene devices only)
+		// recalls that device's control scene - there is no per-device set topic on the gateway.
+		const dctl = parseDeviceControl(id);
+		if (dctl) {
+			const sceneId = this.deviceControlScene[dctl.uuid];
+			if (sceneId == null) {
+				return; // read-only device (no / multiple control scenes)
+			}
+			const maxLevel = this.cfg.levelScale === 'raw' ? 254 : 100;
+			const level = dctl.leaf === 'on' ? (state.val ? maxLevel : 0) : Number(state.val);
+			const command = casambi.buildCommand({ channel: 'scenes', index: sceneId, leaf: 'level' }, level, this.cfg);
+			if (command) {
+				this.broker.publish(command.topic, command.payload);
+				this.setState(id, { val: state.val, ack: true });
+				this.log.debug(`Device ${dctl.uuid} ${dctl.leaf}=${state.val} -> recall scene ${sceneId}`);
+			}
 			return;
 		}
 		const parts = this.parseStateId(id);
