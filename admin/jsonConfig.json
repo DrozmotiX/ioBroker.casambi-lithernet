@@ -208,6 +208,35 @@
 					"xs": 12, "sm": 12, "md": 6, "lg": 4, "xl": 4
 				}
 			}
+		},
+		"controlMapping": {
+			"type": "panel",
+			"label": "Control mapping",
+			"items": {
+				"_mapHint": {
+					"type": "staticText",
+					"text": "Assign a control scene to devices that have MORE than one single-member scene - the adapter cannot guess which one to use, so they stay read-only until set here. Each scene controls exactly one device, so picking the scene is enough (the option shows device -> scene). The adapter log lists exactly which devices still need a scene after each sync/reboot. Devices with a single scene are mapped automatically and need no entry. Pick one scene per device.",
+					"newLine": true,
+					"xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12
+				},
+				"controlSceneMap": {
+					"type": "table",
+					"label": "Device control scenes",
+					"uniqueColumns": ["scene"],
+					"items": [
+						{
+							"type": "selectSendTo",
+							"attr": "scene",
+							"title": "Control scene (device -> scene)",
+							"command": "getControlSceneOptions",
+							"noTranslation": true,
+							"width": "100%"
+						}
+					],
+					"newLine": true,
+					"xs": 12, "sm": 12, "md": 12, "lg": 10, "xl": 8
+				}
+			}
 		}
 	}
 }

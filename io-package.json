@@ -1,8 +1,12 @@
 {
 	"common": {
 		"name": "casambi-lithernet",
-		"version": "0.6.2",
+		"version": "0.6.3",
 		"news": {
+			"0.6.3": {
+				"en": "Per-device control scene mapping: a device with exactly one single-member scene is mapped automatically; a device with several is no longer silently mapped to the lowest id - it stays read-only and is listed in the log until you assign its control scene in the new admin 'Control mapping' tab (pick the scene by name; each scene controls one device). Resolves the ambiguous-control-scene devices.",
+				"de": "Steuerszene-Zuordnung pro Gerät: ein Gerät mit genau einer Einzelmitglied-Szene wird automatisch zugeordnet; ein Gerät mit mehreren wird nicht mehr stillschweigend der niedrigsten ID zugeordnet - es bleibt schreibgeschützt und wird im Log aufgeführt, bis du im neuen Admin-Tab 'Control mapping' seine Steuerszene zuweist (Szene per Name wählen; jede Szene steuert ein Gerät). Behebt die mehrdeutig gesteuerten Geräte."
+			},
 			"0.6.2": {
 				"en": "Diagnostic: any gateway feedback topic that is not yet mapped (e.g. the element_* family carrying battery and physical button events) is now logged once at info level, deduplicated by topic shape - so new payloads can be captured for mapping without raising the whole instance to debug. No behaviour change.",
 				"de": "Diagnose: jedes noch nicht zugeordnete Gateway-Feedback-Topic (z. B. die element_*-Familie mit Batterie- und Tastendruck-Ereignissen) wird nun einmalig auf Info-Ebene protokolliert, dedupliziert nach Topic-Form - damit neue Payloads für die Zuordnung erfasst werden können, ohne die gesamte Instanz auf Debug zu setzen. Keine Verhaltensänderung."
@@ -210,7 +214,8 @@
 		"cloudPassword": "",
 		"cloudSyncInterval": 60,
 		"cloudDeviceRange": "0-*",
-		"cloudSceneRange": "0-*"
+		"cloudSceneRange": "0-*",
+		"controlSceneMap": []
 	},
 	"objects": [],
 	"instanceObjects": [

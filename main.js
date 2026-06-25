@@ -95,12 +95,17 @@ class CasambiLithernet extends utils.Adapter {
 		// new gateway payloads; carries no behaviour.
 		this.unhandledShapes = new Set();
 		this.syncTimer = undefined;
-		// device key (BLE address) -> control sceneId, ONLY for devices with exactly one
-		// single-member control scene. Those get writable level/on that recall the scene.
+		// device key (BLE address) -> control sceneId for every device with a RESOLVED control
+		// scene (a lone single-member candidate, or the owner's manual pick). Those get writable
+		// level/on that recall the scene; ambiguous devices stay read-only until assigned.
 		this.deviceControlScene = {};
+		// Last parsed+range-filtered cloud model, cached so the admin "Control mapping" selector
+		// (selectSendTo) can offer scene options without a fresh cloud fetch.
+		this.lastParsed = null;
 
 		this.on('ready', this.onReady.bind(this));
 		this.on('stateChange', this.onStateChange.bind(this));
+		this.on('message', this.onMessage.bind(this));
 		this.on('unload', this.onUnload.bind(this));
 
 		jsonExplorer.init(this, stateAttr);
@@ -238,6 +243,7 @@ class CasambiLithernet extends utils.Adapter {
 			parsed.devices = parsed.devices.filter(d => cloudModel.inRange(d.deviceId, devRange));
 			parsed.scenes = parsed.scenes.filter(s => cloudModel.inRange(s.sceneId, scnRange));
 			parsed.coverage = cloudModel.coverage(parsed.devices, parsed.scenes);
+			this.lastParsed = parsed; // for the admin Control-mapping selector
 			await this.buildCloudTree(parsed);
 			await this.reportCoverage(parsed.coverage);
 			this.cloudActive = true;
@@ -278,6 +284,57 @@ class CasambiLithernet extends utils.Adapter {
 	}
 
 	/**
+	 * Admin message handler. Serves the "Control mapping" tab's scene picker (selectSendTo):
+	 * returns one option per candidate scene of each ambiguous device (multiple single-member
+	 * scenes), labelled "<device> -> <scene>" with the sceneId as value. The chosen scene
+	 * uniquely identifies its device, so no separate device column is needed.
+	 *
+	 * @param {ioBroker.Message} obj - incoming adapter message
+	 * @returns {void}
+	 */
+	onMessage(obj) {
+		if (!obj || typeof obj !== 'object' || !obj.command) {
+			return;
+		}
+		if (obj.command === 'getControlSceneOptions') {
+			const options = this.buildControlSceneOptions();
+			if (obj.callback) {
+				this.sendTo(obj.from, obj.command, options, obj.callback);
+			}
+		}
+	}
+
+	/**
+	 * Build the scene-picker options from the last synced cloud catalog: every candidate scene of
+	 * each device that has MORE than one single-member control scene (the ambiguous devices that
+	 * need a manual choice). Empty until the first successful cloud sync.
+	 *
+	 * @returns {Array<{value: number, label: string}>} selectSendTo options
+	 */
+	buildControlSceneOptions() {
+		const parsed = this.lastParsed;
+		if (!parsed || !Array.isArray(parsed.devices)) {
+			return [];
+		}
+		const sceneName = {};
+		for (const s of parsed.scenes) {
+			sceneName[s.sceneId] = s.name;
+		}
+		const options = [];
+		for (const d of parsed.devices) {
+			const cands = Array.isArray(d.controlScenes) ? d.controlScenes : [];
+			if (cands.length <= 1) {
+				continue; // unambiguous (auto) or uncontrollable - no choice to make
+			}
+			const dn = d.name || `Device ${d.deviceId}`;
+			for (const sid of cands) {
+				options.push({ value: sid, label: `${dn} -> ${sceneName[sid] || `Scene ${sid}`} (#${sid})` });
+			}
+		}
+		return options;
+	}
+
+	/**
 	 * (Re)schedule the periodic cloud re-sync from the configured interval (minutes; 0 = off).
 	 *
 	 * @returns {void}
@@ -307,6 +364,14 @@ class CasambiLithernet extends utils.Adapter {
 		this.deviceIdToKey = {};
 		this.cloudScenes = new Set();
 		const builtKeys = new Set();
+		// Owner's manual device->scene assignments (admin "Control mapping" tab) + a sceneId->name
+		// lookup for the actionable warning, and the list of devices still awaiting a manual pick.
+		const manualMap = cloudModel.manualMapFromConfig(parsed.scenes, this.config.controlSceneMap);
+		const sceneName = {};
+		for (const s of parsed.scenes) {
+			sceneName[s.sceneId] = s.name;
+		}
+		const unresolved = [];
 		for (const d of parsed.devices) {
 			const key = d.address || d.uuid; // prefer the short, readable BLE address
 			if (!key) {
@@ -325,27 +390,38 @@ class CasambiLithernet extends utils.Adapter {
 			await this.ensureCloudState(`${base}.deviceId`, 'Device ID', 'number', 'value', false, d.deviceId);
 			await this.ensureCloudState(`${base}.address`, 'BLE address', 'string', 'info.address', false, d.address);
 			await this.ensureCloudState(`${base}.type`, 'Fixture type', 'number', 'value', false, d.type);
-			await this.ensureCloudState(
-				`${base}.controlScene`,
-				'Control scene',
-				'number',
-				'value',
-				false,
-				d.controlScene,
-			);
-			// Per-device control is scene-only. If a device has EXACTLY ONE control scene the
-			// mapping is unambiguous, so make level/on WRITABLE - a write recalls that scene
-			// (see onStateChange). Devices with none/multiple stay read-only. The value itself is
-			// the live readback (filled by MQTT in the next step).
-			const controllable = Array.isArray(d.controlScenes) && d.controlScenes.length === 1;
+			// Per-device control is scene-only. Resolve THE control scene: the owner's manual pick
+			// wins, else a lone single-member candidate auto-maps; a device with multiple candidates
+			// and no manual pick stays read-only (unresolved) until assigned, and a device with none
+			// is uncontrollable. Only resolved devices get writable level/on (a write recalls the
+			// scene, see onStateChange). The value itself is the live MQTT readback (next step).
+			const res = cloudModel.resolveControlScene(d, manualMap);
+			const controllable = res.sceneId != null;
 			if (controllable) {
-				this.deviceControlScene[key] = d.controlScenes[0];
+				this.deviceControlScene[key] = res.sceneId;
 			}
+			if (res.status === 'unresolved') {
+				unresolved.push({ deviceId: d.deviceId, name, candidates: d.controlScenes });
+			}
+			await this.ensureCloudState(`${base}.controlScene`, 'Control scene', 'number', 'value', false, res.sceneId);
 			await this.ensureCloudState(`${base}.level`, 'Level', 'number', 'level.dimmer', controllable);
 			await this.ensureCloudState(`${base}.on`, 'On', 'boolean', 'switch.light', controllable);
 			// Keep write-ability in sync on re-sync (scene added/removed since last run).
 			await this.extendObjectAsync(`${base}.level`, { common: { write: controllable } });
 			await this.extendObjectAsync(`${base}.on`, { common: { write: controllable } });
+		}
+		// Tell the owner exactly which devices still need a control scene chosen (they stay
+		// read-only until then) - named, with their candidate scenes, so it can be set after a
+		// reboot via Settings -> Control mapping.
+		if (unresolved.length) {
+			this.log.warn(
+				`Control scene NOT set (device stays read-only - choose one in Settings -> Control mapping): ${unresolved
+					.map(
+						u =>
+							`"${u.name}" (id ${u.deviceId}) candidates [${u.candidates.map(id => `${sceneName[id] || id}`).join(', ')}]`,
+					)
+					.join('; ')}`,
+			);
 		}
 		for (const s of parsed.scenes) {
 			const padded = casambi.padIndex(s.sceneId);
