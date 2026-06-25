@@ -141,7 +141,7 @@ topic. `sensors` and `buttons` are inputs the adapter injects (`Injectable butto
 	### **WORK IN PROGRESS**
 -->
 
-### **WORK IN PROGRESS**
+### 0.6.1 (2026-06-25)
 * (DutchmanNL) Crash/error reporting via GlitchTip (Sentry protocol) using `@iobroker/plugin-sentry` — uncaught exceptions are reported to the Oikos GlitchTip instance, tagged with the adapter `release` (version). Respects the ioBroker diagnostics setting and can be disabled per instance (`system.adapter.casambi-lithernet.<n>.plugins.sentry.enabled`)
 
 ### 0.6.0 (2026-06-25)
