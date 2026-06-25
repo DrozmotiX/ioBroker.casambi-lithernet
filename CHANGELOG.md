@@ -6,6 +6,9 @@ All notable changes to this adapter are documented here.
 	Placeholder for the next version (at the beginning of the line):
 	## **WORK IN PROGRESS**
 -->
+## 0.6.11 (2026-06-25)
+* (DutchmanNL) Docs: how to find your short **Network UUID** (it is **not** the app's 128-bit iBeacon UUID — entering that makes the cloud sync 404). Ship the read-only `getinfo.py` in the [casambi-bt playground](docs/casambi-bt-playground/) — it connects over Bluetooth with your network password and prints the UUID + network structure, **no lights touched**
+
 ## 0.6.10 (2026-06-25)
 * (DutchmanNL) Docs: moved the changelog out of the README into this `CHANGELOG.md`; the README keeps a short **Control types & impact** overview and links here
 

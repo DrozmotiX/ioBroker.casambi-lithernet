@@ -1,8 +1,12 @@
 {
 	"common": {
 		"name": "casambi-lithernet",
-		"version": "0.6.10",
+		"version": "0.6.11",
 		"news": {
+			"0.6.11": {
+				"en": "Docs: how to find your short Network UUID (not the app's 128-bit iBeacon UUID, which makes the cloud sync 404). Ship the read-only getinfo.py in the casambi-bt playground — it connects over Bluetooth with your network password and prints the UUID + network structure, no lights touched.",
+				"de": "Doku: wie man die kurze Netzwerk-UUID findet (nicht die 128-Bit-iBeacon-UUID der App, die zum 404 bei der Cloud-Synchronisierung führt). Das schreibgeschützte getinfo.py im casambi-bt-Playground wird mitgeliefert — es verbindet sich per Bluetooth mit dem Netzwerkpasswort und gibt die UUID + Netzwerkstruktur aus, ohne Lichter zu verändern."
+			},
 			"0.6.10": {
 				"en": "Docs: moved the changelog out of the README into a dedicated CHANGELOG.md, and added a short 'Control types & impact' overview to the README (whole-network / group / scene / single-device control and what each affects). No functional change.",
 				"de": "Doku: Changelog aus der README in eine eigene CHANGELOG.md ausgelagert und der README eine kurze Übersicht 'Steuerungsarten & Auswirkung' hinzugefügt (Gesamtnetz-/Gruppen-/Szenen-/Einzelgerätesteuerung und was jeweils betroffen ist). Keine funktionale Änderung."
@@ -114,19 +118,6 @@
 				"pl": "Prawdziwy protokół bramy: stan sceny/grupy/urządzenia na żywo na podstawie opinii poll_* (poziom, kolor, online, stan, bateria) i kontrola transmisji w całej sieci",
 				"uk": "Справжній протокол шлюзу: стан сцени/групи/пристрою в прямому ефірі на основі відгуків poll_* (рівень, колір, онлайн, стан, акумулятор) і керування трансляцією всієї мережі",
 				"zh-cn": "真实网关协议：poll_*反馈的现场场景/组/设备状态（电平、颜色、在线、状态、电池）和全网广播控制"
-			},
-			"0.1.1": {
-				"en": "Added option to log all incoming MQTT messages for setup and diagnostics",
-				"de": "Option hinzugefügt, um alle eingehenden MQTT-Nachrichten für Einrichtung und Diagnose zu protokollieren",
-				"ru": "Добавлена ​​возможность протоколировать все входящие сообщения MQTT для настройки и диагностики.",
-				"pt": "Adicionada opção para registrar todas as mensagens MQTT recebidas para configuração e diagnóstico",
-				"nl": "Optie toegevoegd om alle inkomende MQTT-berichten te loggen voor installatie en diagnostiek",
-				"fr": "Option ajoutée pour enregistrer tous les messages MQTT entrants pour la configuration et les diagnostics",
-				"it": "Aggiunta un'opzione per registrare tutti i messaggi MQTT in entrata per la configurazione e la diagnostica",
-				"es": "Opción agregada para registrar todos los mensajes MQTT entrantes para configuración y diagnóstico.",
-				"pl": "Dodano opcję rejestrowania wszystkich przychodzących komunikatów MQTT w celu konfiguracji i diagnostyki",
-				"uk": "Додана опція для реєстрації всіх вхідних повідомлень MQTT для налаштування та діагностики",
-				"zh-cn": "添加了用于记录所有传入 MQTT 消息以进行设置和诊断的选项"
 			}
 		},
 		"titleLang": {
