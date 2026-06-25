@@ -168,7 +168,12 @@
 			{
 				"admin": ">=7.0.23"
 			}
-		]
+		],
+		"plugins": {
+			"sentry": {
+				"dsn": "https://1b295992b8f84300b7057e7f647713b0@glitchtip.drozmotix.nl/4"
+			}
+		}
 	},
 	"encryptedNative": [
 		"password",
