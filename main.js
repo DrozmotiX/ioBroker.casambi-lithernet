@@ -64,6 +64,10 @@ class CasambiLithernet extends utils.Adapter {
 			groups: /** @type {Set<string>} */ (new Set()),
 		};
 		this.orphanTimer = /** @type {ioBroker.Timeout | undefined} */ (undefined);
+		// Device indices whose `level` has been forced read-only. Per-device control is impossible
+		// over MQTT (no set topic), but `level` shares the writable control-channel leaf, so it is
+		// overridden to write:false once per device. Cleared when a device's tree is removed.
+		this.deviceLevelReadonly = /** @type {Set<string>} */ (new Set());
 
 		this.on('ready', this.onReady.bind(this));
 		this.on('stateChange', this.onStateChange.bind(this));
@@ -207,6 +211,21 @@ class CasambiLithernet extends utils.Adapter {
 			this.applyNames(tree);
 		}
 		await jsonExplorer.traverseJson(tree, '', this.hasNames, false, 0);
+
+		// Device states are monitoring-only: the gateway exposes no per-device set topic, so a
+		// per-device `level` is never controllable. It shares the `level` leaf which is writable
+		// for the control channels (broadcast/scenes/groups), so force the device copy read-only
+		// once per device (when its values first create the state).
+		if (tree.devices) {
+			for (const [index, node] of Object.entries(tree.devices)) {
+				if (node && node.level !== undefined && !this.deviceLevelReadonly.has(index)) {
+					this.deviceLevelReadonly.add(index);
+					await this.extendObjectAsync(`devices.${index}.level`, { common: { write: false } }).catch(error =>
+						this.log.debug(`read-only fix devices.${index}.level: ${error.message}`),
+					);
+				}
+			}
+		}
 	}
 
 	/**
@@ -216,6 +235,7 @@ class CasambiLithernet extends utils.Adapter {
 	 * @returns {Promise<void>}
 	 */
 	async removeDeviceTree(index) {
+		this.deviceLevelReadonly.delete(index);
 		try {
 			await this.delObjectAsync(`devices.${index}`, { recursive: true });
 		} catch (error) {

@@ -101,6 +101,11 @@ topic. `sensors` and `buttons` are inputs the adapter injects (`Injectable butto
 	### **WORK IN PROGRESS**
 -->
 
+### 0.3.3 (2026-06-25)
+* (DutchmanNL) Device states are now read-only (the gateway has no per-device set topic over MQTT)
+* (DutchmanNL) Each device exposes a derived read-only `on` state (level > 0) for downstream consumers (e.g. oikos-connect SwitchCurrent)
+* (DutchmanNL) Add ADR: state model & cloud-enrichment strategy
+
 ### 0.3.2 (2026-06-25)
 * (DutchmanNL) CI: test on Node.js 22.x/24.x and trim the adapter test matrix to Ubuntu
 

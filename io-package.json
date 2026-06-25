@@ -1,8 +1,12 @@
 {
 	"common": {
 		"name": "casambi-lithernet",
-		"version": "0.3.2",
+		"version": "0.3.3",
 		"news": {
+			"0.3.3": {
+				"en": "Device states are now read-only (no per-device control over MQTT) and each device exposes a derived on/off state for downstream consumers. Adds an ADR for the state model and cloud-enrichment strategy.",
+				"de": "Gerätezustände sind jetzt schreibgeschützt (keine Einzelgerätesteuerung über MQTT) und jedes Gerät stellt einen abgeleiteten Ein/Aus-Zustand für nachgelagerte Verbraucher bereit. Fügt eine ADR für das Zustandsmodell und die Cloud-Anreicherungsstrategie hinzu."
+			},
 			"0.3.2": {
 				"en": "CI: test on Node.js 22.x/24.x and trim the test matrix to Ubuntu.",
 				"de": "CI: Test mit Node.js 22.x/24.x und Reduzierung der Testmatrix auf Ubuntu.",
