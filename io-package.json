@@ -1,8 +1,12 @@
 {
 	"common": {
 		"name": "casambi-lithernet",
-		"version": "0.6.1",
+		"version": "0.6.2",
 		"news": {
+			"0.6.2": {
+				"en": "Diagnostic: any gateway feedback topic that is not yet mapped (e.g. the element_* family carrying battery and physical button events) is now logged once at info level, deduplicated by topic shape - so new payloads can be captured for mapping without raising the whole instance to debug. No behaviour change.",
+				"de": "Diagnose: jedes noch nicht zugeordnete Gateway-Feedback-Topic (z. B. die element_*-Familie mit Batterie- und Tastendruck-Ereignissen) wird nun einmalig auf Info-Ebene protokolliert, dedupliziert nach Topic-Form - damit neue Payloads für die Zuordnung erfasst werden können, ohne die gesamte Instanz auf Debug zu setzen. Keine Verhaltensänderung."
+			},
 			"0.6.1": {
 				"en": "Crash and error reporting via GlitchTip (Sentry protocol) using @iobroker/plugin-sentry. Uncaught exceptions are reported to the Oikos GlitchTip instance, tagged with the adapter version. Respects the ioBroker diagnostics setting and can be disabled per instance.",
 				"de": "Absturz- und Fehlerberichte über GlitchTip (Sentry-Protokoll) mittels @iobroker/plugin-sentry. Nicht abgefangene Ausnahmen werden an die Oikos-GlitchTip-Instanz gemeldet und mit der Adapterversion gekennzeichnet. Berücksichtigt die ioBroker-Diagnoseeinstellung und kann pro Instanz deaktiviert werden."

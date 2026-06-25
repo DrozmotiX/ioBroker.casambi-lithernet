@@ -89,6 +89,11 @@ class CasambiLithernet extends utils.Adapter {
 		// True once the cloud catalog has been built; gates MQTT so it doesn't build a parallel
 		// (deviceId-keyed) tree. If the cloud fails, this stays false and MQTT discovery runs.
 		this.cloudActive = false;
+		// Distinct unknown feedback topic *shapes* already logged this run (numeric indices
+		// collapsed to '#'), so a never-before-seen topic family (e.g. element_* battery/button
+		// events) surfaces exactly one info line instead of flooding. Diagnostic aid for mapping
+		// new gateway payloads; carries no behaviour.
+		this.unhandledShapes = new Set();
 		this.syncTimer = undefined;
 		// device key (BLE address) -> control sceneId, ONLY for devices with exactly one
 		// single-member control scene. Those get writable level/on that recall the scene.
@@ -404,6 +409,25 @@ class CasambiLithernet extends utils.Adapter {
 	}
 
 	/**
+	 * Log a one-shot info line for any gateway feedback topic we do not yet map (e.g. the
+	 * `element_` family carrying battery + physical button events). Deduplicated by topic
+	 * shape (numeric indices collapsed to '#') so an on-site button press or a battery lamp
+	 * waking up surfaces a single clean line - no need to flip the whole instance to debug.
+	 * Purely diagnostic: it never creates states or changes routing.
+	 *
+	 * @param {string} topic - full MQTT topic
+	 * @param {object} payload - JSON-parsed payload
+	 */
+	sampleUnhandled(topic, payload) {
+		const shape = casambi.unhandledShape(topic, this.cfg);
+		if (!shape || this.unhandledShapes.has(shape)) {
+			return;
+		}
+		this.unhandledShapes.add(shape);
+		this.log.info(`Unhandled feedback shape ${shape} (e.g. ${topic}): ${JSON.stringify(payload)}`);
+	}
+
+	/**
 	 * Route live MQTT feedback onto the cloud catalog (cloud mode): devices re-keyed by BLE
 	 * address (deviceId->key), scenes by padded id; only known catalog entries are updated.
 	 *
@@ -414,6 +438,7 @@ class CasambiLithernet extends utils.Adapter {
 	async routeLiveFeedback(topic, payload) {
 		const tree = casambi.parseGet(topic, payload, this.cfg);
 		if (!tree) {
+			this.sampleUnhandled(topic, payload);
 			return;
 		}
 		const out = {};
@@ -501,6 +526,7 @@ class CasambiLithernet extends utils.Adapter {
 			// Placeholder slots and unknown topics both land here; keep it quiet (use the
 			// "log all incoming MQTT messages" toggle for raw traffic during debugging).
 			this.log.silly(`Ignored feedback on ${topic}: ${JSON.stringify(payload)}`);
+			this.sampleUnhandled(topic, payload);
 			return;
 		}
 		// Remember which scene/group/device indices actually exist (for orphan cleanup).
