@@ -62,7 +62,8 @@ sudo usermod -aG bluetooth "$USER"
 ```bash
 mkdir -p ~/casambi-play && cd ~/casambi-play
 
-# clone the upstream lib locally (for the demo + reference); we do NOT commit this anywhere
+# clone the UPSTREAM library locally (ships its own example `demo.py`); we do NOT commit this anywhere.
+# NOTE: this clone does NOT contain our `play.py` — that lives in this docs folder; see step 3.
 git clone https://github.com/lkempf/casambi-bt.git
 
 python3 -m venv .venv
@@ -87,7 +88,68 @@ cd casambi-bt && git pull        # refresh the cloned reference/demo
 
 ## 3. Playground script
 
-Save as `~/casambi-play/play.py` (also kept in this folder as `play.py` for reference):
+> **Note:** cloning `casambi-bt` in step 2 only gives you the **upstream library**, whose
+> example is named **`demo.py`** (at `~/casambi-play/casambi-bt/demo.py`). The `play.py` below
+> is *our own* script and lives in **this** repo (`docs/casambi-bt-playground/play.py`) — it is
+> **not** in the cloned library. On the Pi, either create it with the heredoc below, or just run
+> the upstream `demo.py` (see [3b](#3b-shortcut--use-the-upstream-demo)).
+
+Create it on the Pi by pasting this whole block (the quoted `'PYEOF'` stops the shell from
+expanding `$`/`{}`):
+
+```bash
+cat > ~/casambi-play/play.py <<'PYEOF'
+import asyncio
+import logging
+from CasambiBt import Casambi, discover
+
+logging.basicConfig(level=logging.INFO)
+
+
+async def main():
+    print("Scanning for Casambi networks...")
+    devices = await discover()
+    if not devices:
+        print("No networks found. Move the Pi closer / check the dongle.")
+        return
+
+    for i, d in enumerate(devices):
+        print(f"[{i}] {d.address}")
+    idx = int(input("Pick network index: "))
+    device = devices[idx]
+
+    pwd = input("Network password: ")
+
+    casa = Casambi()
+    try:
+        await casa.connect(device, pwd)
+        print("Connected!\n")
+
+        print("UNITS:")
+        for u in casa.units:
+            print("  ", u)
+        print("GROUPS:")
+        for g in casa.groups:
+            print("  ", g)
+        print("SCENES:")
+        for s in casa.scenes:
+            print("  ", s)
+
+        await casa.turnOn(None)         # None = all units
+        await asyncio.sleep(2)
+        await casa.setLevel(None, 128)  # ~50% brightness (0-255)
+        await asyncio.sleep(2)
+        await casa.setLevel(None, 0)    # all off
+    finally:
+        await casa.disconnect()
+
+
+asyncio.run(main())
+PYEOF
+```
+
+For reference, the same script (with extra commented-out per-unit / scene examples) is committed
+alongside this README:
 
 ```python
 import asyncio
@@ -154,11 +216,20 @@ cd ~/casambi-play && source .venv/bin/activate
 python play.py
 ```
 
-Or run the maintainer's own example (same flow):
+### 3b. Shortcut — use the upstream demo
+
+If you'd rather not create a file, the cloned library already ships an equivalent example:
 
 ```bash
-cd ~/casambi-play/casambi-bt
-python demo.py        # add -d for debug logging
+cd ~/casambi-play && source .venv/bin/activate
+python casambi-bt/demo.py        # add -d for debug logging
+```
+
+Quick check that the files you expect are actually present:
+
+```bash
+ls ~/casambi-play/casambi-bt/demo.py   # always there after the clone
+ls ~/casambi-play/play.py              # only there if you ran the heredoc above
 ```
 
 ---
