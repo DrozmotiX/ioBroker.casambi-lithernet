@@ -98,7 +98,8 @@ Casambi app. The adapter derives each device's control scene and reports gaps in
 > (`devices.<uuid>`, name/`deviceId`/`address`/`type`/`controlScene`) and scenes by id; the MQTT
 > tree below is the **gateway-only** (no-cloud) layout. `info.lastSync`,
 > `info.devicesWithoutControlScene`, `info.devicesWithMultipleControlScenes` and
-> `control.syncNow` are added in cloud mode.
+> `control.syncNow` are added in cloud mode. A device with **exactly one** control scene exposes
+> **writable** `level`/`on` (a write recalls that scene); devices with none/multiple stay read-only.
 
 All dimmer levels honour the **Dimmer level scale** setting (percent by default). Feedback
 arrives on `get/poll_*` topics; the trees below are created on demand as the gateway polls.
@@ -139,6 +140,9 @@ topic. `sensors` and `buttons` are inputs the adapter injects (`Injectable butto
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
+
+### 0.5.0 (2026-06-25)
+* (DutchmanNL) Per-device control for unambiguous devices: a device with exactly one control scene gets writable `level`/`on` that recall that scene (devices with no/multiple control scenes stay read-only)
 
 ### 0.4.1 (2026-06-25)
 * (DutchmanNL) Docs: "Data sources & live state" section - the key-free cloud is the catalog only (no live state); live state + control come from the MQTT gateway, or a Casambi developer API key (which can also serve live via the cloud)

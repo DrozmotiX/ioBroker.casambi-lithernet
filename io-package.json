@@ -1,8 +1,12 @@
 {
 	"common": {
 		"name": "casambi-lithernet",
-		"version": "0.4.1",
+		"version": "0.5.0",
 		"news": {
+			"0.5.0": {
+				"en": "Per-device control for unambiguous devices: a device that has exactly one control scene now exposes writable level/on - a write recalls that scene (no per-device set topic exists). Devices with no/multiple control scenes stay read-only.",
+				"de": "Gerätesteuerung für eindeutige Geräte: ein Gerät mit genau einer Steuerszene stellt jetzt beschreibbares level/on bereit - ein Schreibvorgang ruft diese Szene auf (es gibt kein Set-Topic pro Gerät). Geräte ohne/mit mehreren Steuerszenen bleiben schreibgeschützt."
+			},
 			"0.4.1": {
 				"en": "Docs: explain the data-source model - the cloud catalog has no live state, so live state and control need the MQTT gateway (or a Casambi developer API key, which can also serve live via the cloud).",
 				"de": "Doku: Erläuterung des Datenquellen-Modells - der Cloud-Katalog hat keinen Live-Status; Live-Status und Steuerung benötigen das MQTT-Gateway (oder einen Casambi-Entwickler-API-Schlüssel, der Live-Daten auch über die Cloud liefern kann)."
