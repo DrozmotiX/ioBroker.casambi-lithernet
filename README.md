@@ -127,6 +127,39 @@ arrives on `get/poll_*` topics; the trees below are created on demand as the gat
 topic. `sensors` and `buttons` are inputs the adapter injects (`Injectable buttons` = count,
 0 = none).
 
+## Control & state synchronisation
+
+Switching a luminaire is a **two-step round-trip on two separate channels** — the control
+goes out as a scene recall, and the confirmation comes back as a real readback from the
+Casambi mesh. The light's reported state is therefore *measured*, never an optimistic echo of
+the command.
+
+1. **Write — command, `ack:false` (control via scene).** You set `devices.<address>.on` (or
+   `.level`). The adapter translates it to an MQTT `set/scene_level` recall of that device's
+   **control scene** (single-member scene; there is no per-device set topic) and publishes it to
+   the gateway, which recalls the scene on the mesh. The written state stays `ack:false` — the
+   adapter does **not** echo the command.
+2. **Readback — confirmation, `ack:true` (state from MQTT).** The gateway observes the mesh
+   change and pushes `get/poll_device/<N>/values`; the adapter writes the real achieved
+   `devices.<address>.level`/`.on` with **`ack:true`**. So `ack:true` always means
+   *mesh-confirmed state*, read back over MQTT — not a confirmation of your write.
+
+**It is a direct push (in `passive` polling mode).** Passive listens to the Casambi BLE
+advertisements and pushes `poll_device/values` **on change**, event-driven, no request needed —
+so the confirmation lands in **~0.4–1.5 s** (measured ~0.4 s). In `active` mode the same
+confirmation would instead arrive on the cyclic poll (~20 s), not as a push, so **`passive` is
+recommended** for snappy feedback.
+
+**What to watch:** the **device** states `devices.<address>.level` / `.on` (with `ack:true`) —
+*not* `scenes.<n>.active`. A single-member control scene recalled programmatically does **not**
+flip its `active` flag, so scene `active` is not a reliable "did it switch" signal; the device
+readback is.
+
+This split is deliberate — scenes are the **hands** (write/control), the per-device MQTT
+readback is the **eyes** (confirmed state). They are independent channels, which is exactly why
+the reported state stays trustworthy even though control happens via a scene. A downstream
+consumer (e.g. an alias' *Current*) should bind to the `ack:true` device states.
+
 ## Limitations
 
 - Individual `devices.<n>` are **monitoring only** – the gateway exposes no per-device set
@@ -140,6 +173,9 @@ topic. `sensors` and `buttons` are inputs the adapter injects (`Injectable butto
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
+
+### 0.6.7 (2026-06-25)
+* (DutchmanNL) Docs: new **Control & state synchronisation** section — control goes out as a scene recall (`ack:false` command), confirmation comes back as a real MQTT device readback (`ack:true`, mesh-measured), pushed directly in `passive` mode (~0.4–1.5 s); watch the device `level`/`on` states, not scene `active`
 
 ### 0.6.6 (2026-06-25)
 * (DutchmanNL) Fix: a controllable device's `on` no longer reverts to **read-only after being switched** — the live MQTT readback ran `level`/`on` through jsonExplorer, which re-applied `state_attr`'s `write:false` for `on` and clobbered the per-device writability. `level`/`on` **values** are now set directly (`setState`), leaving writability untouched

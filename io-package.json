@@ -1,8 +1,12 @@
 {
 	"common": {
 		"name": "casambi-lithernet",
-		"version": "0.6.6",
+		"version": "0.6.7",
 		"news": {
+			"0.6.7": {
+				"en": "Docs: added a 'Control & state synchronisation' section explaining the two-channel round-trip - control goes out as a scene recall (ack:false command), confirmation comes back as a real MQTT device readback (ack:true, mesh-measured), pushed directly in passive mode (~0.4-1.5s). Watch the device level/on states, not scene active.",
+				"de": "Doku: Abschnitt 'Steuerung & Statussynchronisierung' ergänzt, der den Zwei-Kanal-Roundtrip erklärt - die Steuerung geht als Szenenaufruf hinaus (ack:false-Befehl), die Bestätigung kommt als echte MQTT-Geräte-Rückmeldung zurück (ack:true, am Mesh gemessen), im Passivmodus direkt gepusht (~0,4-1,5s). Auf die Geräte-level/on-States achten, nicht auf scene active."
+			},
 			"0.6.6": {
 				"en": "Fix: a controllable device's `on` state no longer reverts to read-only after it is switched. The live MQTT readback updated level/on through jsonExplorer, which re-applied the read-only default for `on` (state_attr) and clobbered the per-device writability; level/on values are now set directly so writability set at build/assignment time is preserved. A re-sync already healed it; this prevents it from happening.",
 				"de": "Fix: der `on`-State eines steuerbaren Geräts wird nach dem Schalten nicht mehr schreibgeschützt. Die Live-MQTT-Rückmeldung aktualisierte level/on über jsonExplorer, das die schreibgeschützte Vorgabe für `on` (state_attr) erneut anwendete und die geräteweise Schreibbarkeit überschrieb; level/on-Werte werden jetzt direkt gesetzt, sodass die zur Build-/Zuweisungszeit gesetzte Schreibbarkeit erhalten bleibt. Ein Re-Sync hat es bereits geheilt; dies verhindert das Auftreten."
