@@ -141,6 +141,10 @@ topic. `sensors` and `buttons` are inputs the adapter injects (`Injectable butto
 	### **WORK IN PROGRESS**
 -->
 
+### 0.6.4 (2026-06-25)
+* (DutchmanNL) Fix: `controlScene` of an unresolved (multiple-scene) or re-assigned device now clears to `null` instead of keeping a stale lowest-id value — it always reflects the real control scene (or none). Read-only gating was already correct; this fixes only the displayed value
+* (DutchmanNL) The "control scene not set" warning is now **JSON** (`device`, `deviceId`, `address` tree key, `candidates` as `{sceneId, name}`) and is also published to **`info.devicesNeedingControlScene`** — readable, and tells you exactly which `sceneId` to assign
+
 ### 0.6.3 (2026-06-25)
 * (DutchmanNL) Per-device **control scene mapping**: a device with exactly one single-member scene auto-maps as before; a device with **several** candidates is no longer silently mapped to the lowest id — it stays read-only and is **named in the log** until you assign its control scene in the new admin **Control mapping** tab (pick the scene by name; `uniqueColumns` prevents reusing a scene). Each single-member scene controls exactly one device, so choosing the scene is enough
 
