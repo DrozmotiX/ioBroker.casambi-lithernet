@@ -1,8 +1,16 @@
 {
 	"common": {
 		"name": "casambi-lithernet",
-		"version": "0.3.2",
+		"version": "0.4.0",
 		"news": {
+			"0.4.0": {
+				"en": "Casambi cloud as the catalog source of truth (own network credentials, no developer API key): unit/scene/group names, members, capabilities. Builds a uuid-keyed device tree, derives each device's control scene, adds sync (start + interval + syncNow button + lastSync) and scene-coverage diagnostics (devices with no/multiple control scenes).",
+				"de": "Casambi-Cloud als maßgebliche Katalogquelle (eigene Netzwerk-Zugangsdaten, kein Entwickler-API-Schlüssel): Namen von Geräten/Szenen/Gruppen, Mitglieder, Fähigkeiten. Erstellt einen UUID-basierten Gerätebaum, ermittelt die Steuerszene jedes Geräts, ergänzt Synchronisierung (Start + Intervall + syncNow-Schalter + lastSync) und Szenen-Abdeckungsdiagnose (Geräte ohne/mit mehreren Steuerszenen)."
+			},
+			"0.3.3": {
+				"en": "Device states are now read-only (no per-device control over MQTT) and each device exposes a derived on/off state for downstream consumers. Adds an ADR for the state model and cloud-enrichment strategy.",
+				"de": "Gerätezustände sind jetzt schreibgeschützt (keine Einzelgerätesteuerung über MQTT) und jedes Gerät stellt einen abgeleiteten Ein/Aus-Zustand für nachgelagerte Verbraucher bereit. Fügt eine ADR für das Zustandsmodell und die Cloud-Anreicherungsstrategie hinzu."
+			},
 			"0.3.2": {
 				"en": "CI: test on Node.js 22.x/24.x and trim the test matrix to Ubuntu.",
 				"de": "CI: Test mit Node.js 22.x/24.x und Reduzierung der Testmatrix auf Ubuntu.",
@@ -151,10 +159,12 @@
 		]
 	},
 	"encryptedNative": [
-		"password"
+		"password",
+		"cloudPassword"
 	],
 	"protectedNative": [
-		"password"
+		"password",
+		"cloudPassword"
 	],
 	"native": {
 		"bind": "0.0.0.0",
@@ -169,7 +179,13 @@
 		"orphanScanDelay": 120,
 		"sceneNames": [],
 		"groupNames": [],
-		"deviceNames": []
+		"deviceNames": [],
+		"cloudEnabled": true,
+		"cloudUuid": "",
+		"cloudPassword": "",
+		"cloudSyncInterval": 60,
+		"cloudDeviceRange": "0-*",
+		"cloudSceneRange": "0-*"
 	},
 	"objects": [],
 	"instanceObjects": [

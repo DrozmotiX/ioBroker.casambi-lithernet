@@ -149,6 +149,65 @@
 					"xs": 12, "sm": 12, "md": 4, "lg": 4, "xl": 4
 				}
 			}
+		},
+		"cloud": {
+			"type": "panel",
+			"label": "Cloud",
+			"items": {
+				"_cloudHint": {
+					"type": "staticText",
+					"text": "The Casambi cloud is the source of truth for device/scene structure, names and capabilities (own network credentials, no developer API key). It is required - it provides the catalog; live state and control come from the MQTT gateway (optional) on top. Control needs one single-member scene per device in the Casambi app.",
+					"newLine": true,
+					"xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12
+				},
+				"cloudEnabled": {
+					"type": "checkbox",
+					"label": "Use Casambi cloud (required)",
+					"newLine": true,
+					"xs": 12, "sm": 12, "md": 6, "lg": 6, "xl": 6
+				},
+				"cloudUuid": {
+					"type": "text",
+					"label": "Network UUID",
+					"help": "Casambi app: More -> Network Setup -> iBeacon -> UUID.",
+					"hidden": "!data.cloudEnabled",
+					"newLine": true,
+					"xs": 12, "sm": 12, "md": 6, "lg": 4, "xl": 4
+				},
+				"cloudPassword": {
+					"type": "password",
+					"label": "Network password",
+					"help": "The network (admin) password set when the network was created or shared. Stored encrypted.",
+					"visible": true,
+					"hidden": "!data.cloudEnabled",
+					"xs": 12, "sm": 12, "md": 6, "lg": 4, "xl": 4
+				},
+				"cloudSyncInterval": {
+					"type": "number",
+					"label": "Auto-sync every (minutes)",
+					"help": "Re-read the cloud catalog on this interval (0 = only at start / on demand). Trigger an immediate sync via the state control.syncNow; the last run is shown in info.lastSync.",
+					"min": 0,
+					"max": 1440,
+					"hidden": "!data.cloudEnabled",
+					"newLine": true,
+					"xs": 12, "sm": 12, "md": 6, "lg": 4, "xl": 4
+				},
+				"cloudDeviceRange": {
+					"type": "text",
+					"label": "Build device range",
+					"help": "Which device IDs to build objects for. \"0-*\" = all, e.g. \"1-30\" or \"5\". Useful to try a subset.",
+					"hidden": "!data.cloudEnabled",
+					"newLine": true,
+					"xs": 12, "sm": 12, "md": 6, "lg": 4, "xl": 4
+				},
+				"cloudSceneRange": {
+					"type": "text",
+					"label": "Build scene range",
+					"help": "Which scene IDs to build objects for. \"0-*\" = all, e.g. \"1-80\".",
+					"hidden": "!data.cloudEnabled",
+					"xs": 12, "sm": 12, "md": 6, "lg": 4, "xl": 4
+				}
+			}
 		}
 	}
 }
