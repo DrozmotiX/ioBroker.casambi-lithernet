@@ -37,6 +37,35 @@ gateway's MQTT client at the ioBroker host and the configured port.
 - Inject **light (lux)** and **PIR** sensor values, and optional virtual **button** events
   back into the Casambi network.
 - Dimmer levels exposed as 0–100 % (default) or raw 0–254.
+- **Casambi cloud catalog** (your own network credentials, no developer API key): device/scene/group
+  names, structure, capabilities and button→scene wiring, with on-demand and scheduled sync.
+- **Scene-coverage diagnostics**: flags devices with no / multiple control scenes.
+
+## Data sources & live state
+
+The adapter uses up to three sources, each with a distinct role — **the Casambi cloud is the
+*catalog*; the MQTT gateway is the *live/control* plane.**
+
+| Capability | Casambi cloud (key-free, your network credentials) | MQTT gateway (Lithernet) | Casambi Developer API (needs API key) |
+|---|---|---|---|
+| Names, structure, capabilities, button→scene | ✅ source of truth | ids only | ✅ |
+| **Live** device level / on, scene active | ❌ no live (poll snapshot, no push) | ✅ real-time (~1–2 s) | ✅ real-time (WebSocket) |
+| **Control** (recall / dim) | ❌ | ✅ via scene recall | ✅ |
+| Update cadence | poll: at start + every *X* min | continuous push | continuous push |
+
+What this means:
+
+- **The key-free cloud gives the catalog only** — it is request/response and carries **no live
+  state**. So **for live state and control you need the MQTT gateway** (or the developer API).
+- **When an MQTT gateway is present it provides live state + control** and takes precedence over
+  the cloud.
+- **With a Casambi Developer API key**, the cloud can *also* deliver live state + control
+  (WebSocket) — so the MQTT gateway becomes optional even for live updates. *(Planned; the
+  key-free path does not include this.)*
+
+Per-device control is **scene-only**: create **one single-member scene per device** in the
+Casambi app. The adapter derives each device's control scene and reports gaps in
+`info.devicesWithoutControlScene` / `info.devicesWithMultipleControlScenes`.
 
 ## Prerequisites
 
@@ -58,8 +87,18 @@ gateway's MQTT client at the ioBroker host and the configured port.
    (scene/group/device state), the gateway must be set to **Polling Method = active** in its
    own web UI, with the number of scenes/groups/devices to query configured. The
    `broadcast`, `scenes`, `groups`, `devices` and `ungrouped` trees then populate live.
+5. **Cloud (catalog):** in the **Cloud** tab enter your **Network UUID** (Casambi app → *More →
+   Network Setup → iBeacon → UUID*) and **network password** (stored encrypted). The catalog is
+   built on start and re-synced on the configured interval or on demand via `control.syncNow`
+   (last run in `info.lastSync`). Optionally limit the **build range** (device/scene) to try a subset.
 
 ## Objects
+
+> With the **cloud catalog** enabled, devices are keyed by their stable **uuid**
+> (`devices.<uuid>`, name/`deviceId`/`address`/`type`/`controlScene`) and scenes by id; the MQTT
+> tree below is the **gateway-only** (no-cloud) layout. `info.lastSync`,
+> `info.devicesWithoutControlScene`, `info.devicesWithMultipleControlScenes` and
+> `control.syncNow` are added in cloud mode.
 
 All dimmer levels honour the **Dimmer level scale** setting (percent by default). Feedback
 arrives on `get/poll_*` topics; the trees below are created on demand as the gateway polls.
@@ -100,6 +139,9 @@ topic. `sensors` and `buttons` are inputs the adapter injects (`Injectable butto
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
+
+### 0.4.1 (2026-06-25)
+* (DutchmanNL) Docs: "Data sources & live state" section - the key-free cloud is the catalog only (no live state); live state + control come from the MQTT gateway, or a Casambi developer API key (which can also serve live via the cloud)
 
 ### 0.4.0 (2026-06-25)
 * (DutchmanNL) Casambi cloud as the catalog source of truth: reads the network structure (names, scenes, groups, capabilities) using your own network credentials (UUID + network password) - no developer API key required

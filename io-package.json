@@ -1,8 +1,12 @@
 {
 	"common": {
 		"name": "casambi-lithernet",
-		"version": "0.4.0",
+		"version": "0.4.1",
 		"news": {
+			"0.4.1": {
+				"en": "Docs: explain the data-source model - the cloud catalog has no live state, so live state and control need the MQTT gateway (or a Casambi developer API key, which can also serve live via the cloud).",
+				"de": "Doku: Erläuterung des Datenquellen-Modells - der Cloud-Katalog hat keinen Live-Status; Live-Status und Steuerung benötigen das MQTT-Gateway (oder einen Casambi-Entwickler-API-Schlüssel, der Live-Daten auch über die Cloud liefern kann)."
+			},
 			"0.4.0": {
 				"en": "Casambi cloud as the catalog source of truth (own network credentials, no developer API key): unit/scene/group names, members, capabilities. Builds a uuid-keyed device tree, derives each device's control scene, adds sync (start + interval + syncNow button + lastSync) and scene-coverage diagnostics (devices with no/multiple control scenes).",
 				"de": "Casambi-Cloud als maßgebliche Katalogquelle (eigene Netzwerk-Zugangsdaten, kein Entwickler-API-Schlüssel): Namen von Geräten/Szenen/Gruppen, Mitglieder, Fähigkeiten. Erstellt einen UUID-basierten Gerätebaum, ermittelt die Steuerszene jedes Geräts, ergänzt Synchronisierung (Start + Intervall + syncNow-Schalter + lastSync) und Szenen-Abdeckungsdiagnose (Geräte ohne/mit mehreren Steuerszenen)."
