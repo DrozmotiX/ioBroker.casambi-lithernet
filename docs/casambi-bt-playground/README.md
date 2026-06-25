@@ -11,6 +11,29 @@ playground; the library is **cloned/installed at runtime on the Pi**, not vendor
 
 ---
 
+## 🚀 Easiest path: the bundle zip
+
+Don't want to copy/paste the steps below? Grab the prebuilt bundle
+[`casambi-bt-playground-v1.0.0.zip`](casambi-bt-playground-v1.0.0.zip), push it to the Pi, and run
+two scripts:
+
+```bash
+# on your workstation
+scp casambi-bt-playground-v1.0.0.zip root@<pi>:~
+
+# on the Pi
+unzip casambi-bt-playground-v1.0.0.zip -d casambi-play
+cd casambi-play
+./setup.sh             # Evolution firmware (default); ./setup.sh --classic for Classic/legacy
+./run.sh
+```
+
+`setup.sh` clones the upstream lib, builds the venv and installs `casambi-bt`; `run.sh` runs the
+interactive script. Bundle source + details: [`bundle/`](bundle/). The manual walkthrough below is
+the same thing, step by step.
+
+---
+
 ## ⚠️ What this is (and isn't)
 
 - **Unofficial & reverse-engineered.** Not associated with Casambi. Breaks when Casambi ships
