@@ -1,8 +1,12 @@
 {
 	"common": {
 		"name": "casambi-lithernet",
-		"version": "0.6.3",
+		"version": "0.6.4",
 		"news": {
+			"0.6.4": {
+				"en": "Fix: the controlScene state of an unresolved (multiple-scene) or re-assigned device now clears to null instead of keeping a stale lowest-id value, so it always reflects the real control scene (or none). Read-only gating was already correct; this fixes only the displayed value.",
+				"de": "Fix: der controlScene-State eines nicht zugeordneten (Mehrfach-Szenen-) oder neu zugewiesenen Geräts wird jetzt auf null zurückgesetzt, statt einen veralteten niedrigsten-ID-Wert zu behalten, sodass er stets die echte Steuerszene (oder keine) widerspiegelt. Das Schreibschutz-Verhalten war bereits korrekt; dies korrigiert nur den angezeigten Wert."
+			},
 			"0.6.3": {
 				"en": "Per-device control scene mapping: a device with exactly one single-member scene is mapped automatically; a device with several is no longer silently mapped to the lowest id - it stays read-only and is listed in the log until you assign its control scene in the new admin 'Control mapping' tab (pick the scene by name; each scene controls one device). Resolves the ambiguous-control-scene devices.",
 				"de": "Steuerszene-Zuordnung pro Gerät: ein Gerät mit genau einer Einzelmitglied-Szene wird automatisch zugeordnet; ein Gerät mit mehreren wird nicht mehr stillschweigend der niedrigsten ID zugeordnet - es bleibt schreibgeschützt und wird im Log aufgeführt, bis du im neuen Admin-Tab 'Control mapping' seine Steuerszene zuweist (Szene per Name wählen; jede Szene steuert ein Gerät). Behebt die mehrdeutig gesteuerten Geräte."

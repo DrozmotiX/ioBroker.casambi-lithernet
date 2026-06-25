@@ -403,7 +403,11 @@ class CasambiLithernet extends utils.Adapter {
 			if (res.status === 'unresolved') {
 				unresolved.push({ deviceId: d.deviceId, name, candidates: d.controlScenes });
 			}
-			await this.ensureCloudState(`${base}.controlScene`, 'Control scene', 'number', 'value', false, res.sceneId);
+			// Always (re)write the resolved control scene - including null - so an unresolved or
+			// re-assigned device clears the previous value. ensureCloudState skips null, so set it
+			// explicitly after the object exists.
+			await this.ensureCloudState(`${base}.controlScene`, 'Control scene', 'number', 'value', false);
+			await this.setState(`${base}.controlScene`, { val: res.sceneId, ack: true });
 			await this.ensureCloudState(`${base}.level`, 'Level', 'number', 'level.dimmer', controllable);
 			await this.ensureCloudState(`${base}.on`, 'On', 'boolean', 'switch.light', controllable);
 			// Keep write-ability in sync on re-sync (scene added/removed since last run).
