@@ -228,6 +228,9 @@ that device. Setup:
 	### **WORK IN PROGRESS**
 -->
 
+### 0.6.8 (2026-06-25)
+* (DutchmanNL) Fix: a button/dimmer module no longer **explodes the object tree**. The gateway sends `element_*` sub-topics (`poll_device/<n>/element_{button,pushbutton,slider,onoff,dimmer}`) for those modules; `parseGet` was flattening every field into a raw state (`button_1..8`, `dimmer_1..4`, …). It now only flattens `values`/`propertys`; the `element_*` families are **sampled** (logged once) for proper button/dimmer mapping later, and existing leaked `element_*` states are cleaned up on sync
+
 ### 0.6.7 (2026-06-25)
 * (DutchmanNL) Docs: new **Control & state synchronisation** section — control = scene recall (`ack:false`), confirmation = real MQTT device readback (`ack:true`, mesh-measured), pushed directly in `passive` (~0.4–1.5 s); state is correct no matter how the light was changed (app/wall/KNX/scene) and absolute on/off always works. Added **Per-device control: setup** (one single-member scene per device + assignment) and **Troubleshooting**; Setup now recommends `passive` polling
 

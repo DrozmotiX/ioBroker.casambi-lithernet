@@ -429,6 +429,25 @@ class CasambiLithernet extends utils.Adapter {
 		} catch (error) {
 			this.log.debug(`device reconcile: ${error.message}`);
 		}
+		// One-time cleanup: remove legacy element_* leaf states (button_N/pushbutton_N/slider_N/
+		// onoff_N/dimmer_N) that earlier versions flattened from element_* sub-topics before they
+		// were filtered out in parseGet. They are no longer created; drop the orphans.
+		try {
+			const states = await this.getForeignObjectsAsync(`${this.namespace}.devices.*`, 'state');
+			const elementLeaf = /\.(button|pushbutton|slider|onoff|dimmer)_\d+$/;
+			let removed = 0;
+			for (const id of Object.keys(states || {})) {
+				if (elementLeaf.test(id)) {
+					await this.delForeignObjectAsync(id);
+					removed++;
+				}
+			}
+			if (removed) {
+				this.log.info(`Removed ${removed} legacy element_* state(s) (button/dimmer module fields).`);
+			}
+		} catch (error) {
+			this.log.debug(`element-state cleanup: ${error.message}`);
+		}
 	}
 
 	/**
