@@ -1,8 +1,12 @@
 {
 	"common": {
 		"name": "casambi-lithernet",
-		"version": "0.6.5",
+		"version": "0.6.6",
 		"news": {
+			"0.6.6": {
+				"en": "Fix: a controllable device's `on` state no longer reverts to read-only after it is switched. The live MQTT readback updated level/on through jsonExplorer, which re-applied the read-only default for `on` (state_attr) and clobbered the per-device writability; level/on values are now set directly so writability set at build/assignment time is preserved. A re-sync already healed it; this prevents it from happening.",
+				"de": "Fix: der `on`-State eines steuerbaren Geräts wird nach dem Schalten nicht mehr schreibgeschützt. Die Live-MQTT-Rückmeldung aktualisierte level/on über jsonExplorer, das die schreibgeschützte Vorgabe für `on` (state_attr) erneut anwendete und die geräteweise Schreibbarkeit überschrieb; level/on-Werte werden jetzt direkt gesetzt, sodass die zur Build-/Zuweisungszeit gesetzte Schreibbarkeit erhalten bleibt. Ein Re-Sync hat es bereits geheilt; dies verhindert das Auftreten."
+			},
 			"0.6.5": {
 				"en": "Control-scene assignment is now done per device in the Objects view (the device list builds itself), replacing the manual settings table. Each ambiguous device (several candidate scenes) gets a writable controlSceneSelect dropdown of its candidate scenes by name; choosing one assigns control live (no restart) and survives restarts. Single-candidate devices auto-map; info.devicesNeedingControlScene lists what still needs a choice.",
 				"de": "Die Steuerszenen-Zuordnung erfolgt jetzt pro Gerät in der Objektansicht (die Geräteliste baut sich selbst auf) und ersetzt die manuelle Einstellungstabelle. Jedes mehrdeutige Gerät (mehrere Kandidatenszenen) erhält ein beschreibbares controlSceneSelect-Dropdown seiner Kandidatenszenen nach Namen; eine Auswahl weist die Steuerung sofort zu (ohne Neustart) und übersteht Neustarts. Geräte mit einer Kandidatenszene werden automatisch zugeordnet; info.devicesNeedingControlScene listet, was noch eine Auswahl benötigt."

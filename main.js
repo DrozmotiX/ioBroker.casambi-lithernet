@@ -628,7 +628,23 @@ class CasambiLithernet extends utils.Adapter {
 			const devs = {};
 			for (const [padded, node] of Object.entries(tree.devices)) {
 				const key = this.deviceIdToKey[parseInt(padded, 10)];
-				if (key) {
+				if (!key) {
+					continue;
+				}
+				// level/on carry per-device WRITABILITY decided at build/assign time. jsonExplorer
+				// re-applies lib/state_attr (where `on` is write:false) on every traverse, which would
+				// reset a controllable device's `on` back to read-only the first time it reports a live
+				// value. So update their VALUES via setState (no common touched) and keep them out of
+				// the jsonExplorer tree; only the dynamic read-only fields (health/colour) go through it.
+				if (node.level !== undefined) {
+					await this.setStateChangedAsync(`devices.${key}.level`, { val: node.level, ack: true });
+					delete node.level;
+				}
+				if (node.on !== undefined) {
+					await this.setStateChangedAsync(`devices.${key}.on`, { val: node.on, ack: true });
+					delete node.on;
+				}
+				if (Object.keys(node).length) {
 					devs[key] = node;
 				}
 			}

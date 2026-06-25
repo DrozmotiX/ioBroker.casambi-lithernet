@@ -141,6 +141,9 @@ topic. `sensors` and `buttons` are inputs the adapter injects (`Injectable butto
 	### **WORK IN PROGRESS**
 -->
 
+### 0.6.6 (2026-06-25)
+* (DutchmanNL) Fix: a controllable device's `on` no longer reverts to **read-only after being switched** — the live MQTT readback ran `level`/`on` through jsonExplorer, which re-applied `state_attr`'s `write:false` for `on` and clobbered the per-device writability. `level`/`on` **values** are now set directly (`setState`), leaving writability untouched
+
 ### 0.6.5 (2026-06-25)
 * (DutchmanNL) **Control-scene assignment moved to per-device dropdown states** (replaces the manual settings table): each ambiguous device gets a writable `devices.<address>.controlSceneSelect` whose admin dropdown lists its candidate scenes **by name** — choosing one assigns control **live** (no restart) and **survives restarts** (persisted in the state). The device list builds itself; single-candidate devices auto-map; `info.devicesNeedingControlScene` lists what still needs a choice
 
