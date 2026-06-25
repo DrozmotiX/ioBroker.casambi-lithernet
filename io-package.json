@@ -1,8 +1,12 @@
 {
 	"common": {
 		"name": "casambi-lithernet",
-		"version": "0.6.0",
+		"version": "0.6.1",
 		"news": {
+			"0.6.1": {
+				"en": "Crash and error reporting via GlitchTip (Sentry protocol) using @iobroker/plugin-sentry. Uncaught exceptions are reported to the Oikos GlitchTip instance, tagged with the adapter version. Respects the ioBroker diagnostics setting and can be disabled per instance.",
+				"de": "Absturz- und Fehlerberichte über GlitchTip (Sentry-Protokoll) mittels @iobroker/plugin-sentry. Nicht abgefangene Ausnahmen werden an die Oikos-GlitchTip-Instanz gemeldet und mit der Adapterversion gekennzeichnet. Berücksichtigt die ioBroker-Diagnoseeinstellung und kann pro Instanz deaktiviert werden."
+			},
 			"0.6.0": {
 				"en": "Live MQTT state mapping onto the cloud catalog: device level/on, scene active, broadcast and device health (online/condition/battery/colour) now update in real time. Device states are now keyed by the shorter, readable BLE address instead of the uuid (stale uuid channels are cleaned up on sync).",
 				"de": "Live-MQTT-Statuszuordnung auf den Cloud-Katalog: Geräte-level/on, Szenen-active, Broadcast und Gerätezustand (online/condition/battery/colour) werden jetzt in Echtzeit aktualisiert. Gerätezustände werden jetzt über die kürzere, lesbarere BLE-Adresse statt der uuid adressiert (veraltete uuid-Kanäle werden bei der Synchronisierung entfernt)."
@@ -168,7 +172,12 @@
 			{
 				"admin": ">=7.0.23"
 			}
-		]
+		],
+		"plugins": {
+			"sentry": {
+				"dsn": "https://1b295992b8f84300b7057e7f647713b0@glitchtip.drozmotix.nl/4"
+			}
+		}
 	},
 	"encryptedNative": [
 		"password",
