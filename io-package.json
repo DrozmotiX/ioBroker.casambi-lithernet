@@ -1,8 +1,12 @@
 {
 	"common": {
 		"name": "casambi-lithernet",
-		"version": "0.6.7",
+		"version": "0.6.8",
 		"news": {
+			"0.6.8": {
+				"en": "Fix: a button/dimmer module no longer explodes the object tree. The gateway sends element_* sub-topics (poll_device/<n>/element_button|pushbutton|slider|onoff|dimmer) for those modules; parseGet was flattening every field into a raw state (button_1..8, dimmer_1..4, ...). It now only flattens values/propertys; the element_* families are sampled (logged once) for proper button/dimmer mapping later, and existing leaked element_* states are cleaned up on sync.",
+				"de": "Fix: ein Tasten-/Dimmer-Modul lässt den Objektbaum nicht mehr explodieren. Das Gateway sendet element_*-Untertopics (poll_device/<n>/element_button|pushbutton|slider|onoff|dimmer) für diese Module; parseGet hat jedes Feld in einen rohen State umgewandelt (button_1..8, dimmer_1..4, ...). Es werden jetzt nur noch values/propertys übernommen; die element_*-Familien werden protokolliert (einmalig) für eine spätere saubere Tasten-/Dimmer-Zuordnung, und vorhandene element_*-States werden beim Sync entfernt."
+			},
 			"0.6.7": {
 				"en": "Docs: new 'Control & state synchronisation' section (control = scene recall ack:false; confirmation = real MQTT device readback ack:true, mesh-measured, pushed directly in passive mode ~0.4-1.5s), so state is correct no matter how the light was changed (app/wall/KNX/scene) and absolute on/off always works. Plus a 'Per-device control: setup' how-to (one single-member scene per device + assignment) and a Troubleshooting section; Setup now recommends passive polling.",
 				"de": "Doku: neuer Abschnitt 'Steuerung & Statussynchronisierung' (Steuerung = Szenenaufruf ack:false; Bestätigung = echte MQTT-Geräte-Rückmeldung ack:true, am Mesh gemessen, im Passivmodus direkt gepusht ~0,4-1,5s), daher ist der Status korrekt, egal wie das Licht geändert wurde (App/Wandschalter/KNX/Szene), und absolutes Ein/Aus funktioniert immer. Zusätzlich eine Anleitung 'Gerätesteuerung: Einrichtung' (eine Einzelmitglied-Szene pro Gerät + Zuweisung) und ein Abschnitt zur Fehlerbehebung; das Setup empfiehlt jetzt passives Polling."
