@@ -25,6 +25,20 @@ cd casambi-play
 `run.sh` scans for networks, asks you to pick one and enter the **network password**, then lists
 units/groups/scenes and flashes the lights on → 50% → off.
 
+### Get the network UUID (read-only, no lights touched)
+
+To just read the **network UUID** and structure — e.g. for the adapter's **Cloud** tab — run
+`getinfo.py` instead (after `./setup.sh`):
+
+```bash
+source .venv/bin/activate
+python getinfo.py
+```
+
+It connects with the network password and prints a log line
+`api.casambi.com/network/uuid/<UUID>` — that `<UUID>` is the short network id the adapter needs
+(not the app's 128-bit iBeacon UUID). It never changes any light.
+
 ## Prerequisites
 
 Already present on a standard Raspberry Pi OS, but if `setup.sh` complains:
