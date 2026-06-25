@@ -31,202 +31,46 @@ gateway's MQTT client at the ioBroker host and the configured port.
 ## Features
 
 - Embedded MQTT broker – no external broker required.
-- Scenes, groups and individual devices are **auto-discovered** from the gateway's cyclic
-  status feedback and exposed as ioBroker states.
-- Control of the gateway's own luminaire, scenes and groups (with fade duration).
-- Inject **light (lux)** and **PIR** sensor values, and optional virtual **button** events
-  back into the Casambi network.
-- Dimmer levels exposed as 0–100 % (default) or raw 0–254.
-- **Casambi cloud catalog** (your own network credentials, no developer API key): device/scene/group
-  names, structure, capabilities and button→scene wiring, with on-demand and scheduled sync.
-- **Scene-coverage diagnostics**: flags devices with no / multiple control scenes.
+- Scenes, groups and individual devices **auto-discovered** and exposed as ioBroker states.
+- Per-device control via single-member **control scenes**, with live, mesh-confirmed state.
+- **Casambi cloud catalog** (your own network credentials, no developer API key): names,
+  structure, capabilities and button→scene wiring, with on-demand and scheduled sync.
+- Inject **light (lux)** / **PIR** sensor values and virtual **button** events.
+- Dimmer levels as 0–100 % (default) or raw 0–254; scene-coverage diagnostics.
 
-## Data sources & live state
-
-The adapter uses up to three sources, each with a distinct role — **the Casambi cloud is the
-*catalog*; the MQTT gateway is the *live/control* plane.**
-
-| Capability | Casambi cloud (key-free, your network credentials) | MQTT gateway (Lithernet) | Casambi Developer API (needs API key) |
-|---|---|---|---|
-| Names, structure, capabilities, button→scene | ✅ source of truth | ids only | ✅ |
-| **Live** device level / on, scene active | ❌ no live (poll snapshot, no push) | ✅ real-time (~1–2 s) | ✅ real-time (WebSocket) |
-| **Control** (recall / dim) | ❌ | ✅ via scene recall | ✅ |
-| Update cadence | poll: at start + every *X* min | continuous push | continuous push |
-
-What this means:
-
-- **The key-free cloud gives the catalog only** — it is request/response and carries **no live
-  state**. So **for live state and control you need the MQTT gateway** (or the developer API).
-- **When an MQTT gateway is present it provides live state + control** and takes precedence over
-  the cloud.
-- **With a Casambi Developer API key**, the cloud can *also* deliver live state + control
-  (WebSocket) — so the MQTT gateway becomes optional even for live updates. *(Planned; the
-  key-free path does not include this.)*
-
-Per-device control is **scene-only**: create **one single-member scene per device** in the
-Casambi app. The adapter derives each device's control scene and reports gaps in
-`info.devicesWithoutControlScene` / `info.devicesWithMultipleControlScenes`.
-
-## Prerequisites
-
-- A Lithernet Casambi gateway on the same trusted network as ioBroker.
-- Casambi **Evolution** firmware **> v35** is recommended (Classic firmware works with
-  reduced functionality).
-- **No SSL:** the gateway does not support MQTT over TLS, so the broker listens on plain
-  TCP. Run it on a trusted VLAN only.
-
-## Setup
+## Quick start
 
 1. Install the adapter and create an instance.
-2. In the instance settings configure the **MQTT broker** (listen address, **port** –
-   default `3791`, optional username/password) and the **Gateway ID** (the `<deviceId>`
-   you set in the gateway's web UI – default `0`).
-3. In the gateway's web UI, enable **MQTT mode** and point its MQTT client at
-   `<ioBroker-host>:<port>` (and the credentials, if you set any).
-4. Once the gateway connects, `info.connection` turns green. To receive **feedback**
-   (scene/group/device state), set the gateway's **Polling Method** in its own web UI.
-   **`passive` is recommended** — it listens to the Casambi BLE advertisements and **pushes**
-   state on change (sub-second, and it discovers the whole mesh). `active` cyclically polls a
-   configured count instead (~20 s, slower, and undercounts the mesh if the device count is set
-   too low). Either way the `broadcast`, `scenes`, `groups`, `devices` and `ungrouped` trees
-   populate live; see **Control & state synchronisation** below for why `passive` matters.
-5. **Cloud (catalog):** in the **Cloud** tab enter your **Network UUID** (Casambi app → *More →
-   Network Setup → iBeacon → UUID*) and **network password** (stored encrypted). The catalog is
-   built on start and re-synced on the configured interval or on demand via `control.syncNow`
-   (last run in `info.lastSync`). Optionally limit the **build range** (device/scene) to try a subset.
+2. Configure the **embedded MQTT broker** (port `3791`) + **Gateway ID**, enable **MQTT mode** in
+   the gateway's web UI and point its MQTT client at `<ioBroker-host>:<port>`.
+3. Set the gateway **Polling Method = `passive`** (recommended — pushes state on change,
+   sub-second).
+4. In the **Cloud** tab enter your **Network UUID** + **network password** — the catalog source of
+   truth for names, structure and scenes.
+5. Make luminaires controllable: create **one single-member scene per device** in the Casambi app;
+   they then auto-map (or pick the scene in each device's `controlSceneSelect`).
 
-## Objects
+→ Full walk-through: **[Setup & prerequisites](docs/setup.md)** ·
+**[per-device control](docs/control-and-state.md#setting-up-per-device-control)**.
 
-> With the **cloud catalog** enabled, devices are keyed by their **BLE address**
-> (`devices.<address>`, name/`deviceId`/`uuid`/`type`/`controlScene` + live `level`/`on`/health) and
-> scenes by id; the MQTT tree below is the **gateway-only** (no-cloud) layout. `info.lastSync`,
-> `info.devicesWithoutControlScene`, `info.devicesWithMultipleControlScenes` and
-> `control.syncNow` are added in cloud mode. A device with **exactly one** control scene exposes
-> **writable** `level`/`on` (a write recalls that scene); devices with none/multiple stay read-only.
+## Documentation
 
-All dimmer levels honour the **Dimmer level scale** setting (percent by default). Feedback
-arrives on `get/poll_*` topics; the trees below are created on demand as the gateway polls.
-
-| State | Role | Direction | MQTT |
-|-------|------|-----------|------|
-| `info.connection` | `indicator.connected` | read | gateway client connected |
-| `broadcast.level` | `level.dimmer` | read/write | `set/level` ↔ `poll_broadcast` (whole network) |
-| `broadcast.{last_level,cct_level,vertical}` | `value` | read | `poll_broadcast` |
-| `scenes.<n>.level` | `level.dimmer` | read/write | `set/scene_level` ↔ `poll_scene/<n>` |
-| `scenes.<n>.active` | `indicator` | read | `poll_scene/<n>` |
-| `groups.<n>.level` | `level.dimmer` | read/write | `set/group_level` ↔ `poll_group/<n>` |
-| `groups.<n>.{last_level,cct_level,vertical}` | `value` | read | `poll_group/<n>` |
-| `devices.<n>.level` | `level.dimmer` | read | `poll_device/<n>/values` (monitoring) |
-| `devices.<n>.{cct_level,red,green,blue,white,hue,sat,…}` | colour | read | `poll_device/<n>/values` |
-| `devices.<n>.online` | `indicator.reachable` | read | `poll_device/<n>/propertys` |
-| `devices.<n>.{condition,battery_level,overheating,general_failure,…}` | health | read | `poll_device/<n>/propertys` |
-| `ungrouped.*` | `value` | read | `poll_ungrouped` |
-| `sensors.lux` | `value.brightness` | write | `set/light_sensor` |
-| `sensors.pir` | `switch` | write | `set/pir_sensor` |
-| `buttons.<n>.{level,pressed,released}` | `level.dimmer`/`button` | write | `set/button_level` / `set/push_button_*` |
-
-`broadcast` (all lights), `scenes` and `groups` are **controllable** (writable `level`).
-`devices` and `ungrouped` are **monitoring only** — the gateway exposes no per-device set
-topic. `sensors` and `buttons` are inputs the adapter injects (`Injectable buttons` = count,
-0 = none).
-
-## Control & state synchronisation
-
-Switching a luminaire is a **two-step round-trip on two separate channels** — the control
-goes out as a scene recall, and the confirmation comes back as a real readback from the
-Casambi mesh. The light's reported state is therefore *measured*, never an optimistic echo of
-the command.
-
-1. **Write — command, `ack:false` (control via scene).** You set `devices.<address>.on` (or
-   `.level`). The adapter translates it to an MQTT `set/scene_level` recall of that device's
-   **control scene** (single-member scene; there is no per-device set topic) and publishes it to
-   the gateway, which recalls the scene on the mesh. The written state stays `ack:false` — the
-   adapter does **not** echo the command.
-2. **Readback — confirmation, `ack:true` (state from MQTT).** The gateway observes the mesh
-   change and pushes `get/poll_device/<N>/values`; the adapter writes the real achieved
-   `devices.<address>.level`/`.on` with **`ack:true`**. So `ack:true` always means
-   *mesh-confirmed state*, read back over MQTT — not a confirmation of your write.
-
-**It is a direct push (in `passive` polling mode).** Passive listens to the Casambi BLE
-advertisements and pushes `poll_device/values` **on change**, event-driven, no request needed —
-so the confirmation lands in **~0.4–1.5 s** (measured ~0.4 s). In `active` mode the same
-confirmation would instead arrive on the cyclic poll (~20 s), not as a push, so **`passive` is
-recommended** for snappy feedback.
-
-**What to watch:** the **device** states `devices.<address>.level` / `.on` (with `ack:true`) —
-*not* `scenes.<n>.active`. A single-member control scene recalled programmatically does **not**
-flip its `active` flag, so scene `active` is not a reliable "did it switch" signal; the device
-readback is.
-
-This split is deliberate — scenes are the **hands** (write/control), the per-device MQTT
-readback is the **eyes** (confirmed state). They are independent channels, which is exactly why
-the reported state stays trustworthy even though control happens via a scene. A downstream
-consumer (e.g. an alias' *Current*) should bind to the `ack:true` device states.
-
-**Source-independent state.** Because the readback reflects the *mesh*, the reported state is
-correct no matter **how** the light was changed — the Casambi app, a wall switch, a KNX/Casambi
-bridge, another scene, or this adapter. And since control is an **absolute** scene recall (`on` =
-recall at full, `off` = recall at level 0), a command always lands correctly regardless of the
-prior state: if a light is on and you send `off`, it turns off. There is no toggle and no need to
-know the previous state.
-
-## Per-device control: setup
-
-Per-device control is **scene-only** (the gateway has no per-device set topic), so each
-controllable device needs **one single-member scene** — a Casambi scene whose only member is
-that device. Setup:
-
-1. **Create one single-member scene per device** in the **Casambi app** (a scene that contains
-   exactly that one luminaire/relay). Naming it clearly (e.g. `_LivingRoom-Spot`) makes the next
-   step easier.
-2. **Sync the cloud catalog** (Cloud tab / `control.syncNow`). The adapter discovers each
-   device's candidate control scenes.
-3. **Assign the control scene:**
-   - A device with **exactly one** single-member scene is mapped **automatically** — its
-     `devices.<address>.level`/`.on` become writable immediately.
-   - A device with **several** candidate scenes stays read-only until you choose one: open
-     **Objects → `casambi-lithernet.<instance>.devices.<address>`** and set the
-     **`controlSceneSelect`** dropdown to the right scene (by name). The choice applies
-     instantly and survives restarts. `info.devicesNeedingControlScene` lists everything still
-     awaiting a choice.
-4. **Control** the device by writing `devices.<address>.on` (or `.level`). The write recalls the
-   assigned scene; the confirmed state comes back on the device states (see above). `devices.<n>.controlScene`
-   shows which scene currently controls each device (`null` = unresolved/uncontrollable).
-
-> A control scene **must be single-member** so a write only affects that one device. The adapter
-> only offers single-member scenes as candidates for exactly this reason.
-
-## Troubleshooting
-
-- **A device's `level`/`on` is read-only (can't control it).** It has **no** single-member
-  control scene, or **several** and none picked yet. Create one in the app, or pick one in the
-  device's `controlSceneSelect` dropdown. Check `info.devicesNeedingControlScene` and the warning
-  in the log (it names each device + its candidate scenes).
-- **State doesn't update / is stale.** Check `info.connection` is green (gateway connected) and
-  the gateway **Polling Method** is `passive` (or `active`). In `passive`, idle devices only
-  report **on change** — that is expected; trigger a change to see an update.
-- **A re-sync fixed something on its own.** A cloud re-sync (`control.syncNow`) re-asserts each
-  device's resolved control scene and writability; if a state looks wrong, a re-sync is a safe
-  reset.
-- **Sending `off` seems to do nothing.** Confirm the device actually has a resolved
-  `controlScene` (not `null`) and that its control scene is genuinely single-member; a
-  multi-member scene would move several devices and is intentionally not offered.
-- **Cloud sync fails (`info.lastSync` not advancing).** Re-check the **Network UUID** (the short
-  network id, not the app iBeacon UUID) and **network password** in the Cloud tab.
-
-## Limitations
-
-- Individual `devices.<n>` are **monitoring only** – the gateway exposes no per-device set
-  topic; control luminaires via scenes, groups or the gateway luminaire instead.
-- The gateway uses **fixed MQTT topics** that cannot be remapped on the device.
-- Per-gateway limits: 250 devices, 255 groups, 255 scenes. More polled devices means
-  slower cyclic status updates.
+| Guide | What's inside |
+|---|---|
+| [Setup & prerequisites](docs/setup.md) | Install, broker, gateway, polling mode, cloud credentials |
+| [Data sources & live state](docs/data-sources.md) | Cloud catalog vs MQTT live vs developer API — who provides what |
+| [Control & state synchronisation](docs/control-and-state.md) | How switching works (scene recall + mesh readback) and per-device control setup |
+| [Object & state reference](docs/objects.md) | Every state: role, direction and MQTT topic |
+| [Troubleshooting](docs/troubleshooting.md) | Common issues and limitations |
 
 ## Changelog
 <!--
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
+
+### 0.6.9 (2026-06-25)
+* (DutchmanNL) Docs: restructured the README into a short **overview + quick start + documentation index**, with the detailed guides moved into separate files under [`docs/`](docs/) (setup, data sources, control & state, object reference, troubleshooting). Easier to scan; no functional change
 
 ### 0.6.8 (2026-06-25)
 * (DutchmanNL) Fix: a button/dimmer module no longer **explodes the object tree**. The gateway sends `element_*` sub-topics (`poll_device/<n>/element_{button,pushbutton,slider,onoff,dimmer}`) for those modules; `parseGet` was flattening every field into a raw state (`button_1..8`, `dimmer_1..4`, …). It now only flattens `values`/`propertys`; the `element_*` families are **sampled** (logged once) for proper button/dimmer mapping later, and existing leaked `element_*` states are cleaned up on sync

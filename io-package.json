@@ -1,8 +1,12 @@
 {
 	"common": {
 		"name": "casambi-lithernet",
-		"version": "0.6.8",
+		"version": "0.6.9",
 		"news": {
+			"0.6.9": {
+				"en": "Docs: restructured the README into a short overview + quick start + a documentation index, with the detailed guides moved into separate files under docs/ (setup, data sources, control & state synchronisation, object reference, troubleshooting). Easier to scan; no functional change.",
+				"de": "Doku: README in eine kurze Übersicht + Schnellstart + ein Dokumentationsverzeichnis umstrukturiert; die ausführlichen Anleitungen wurden in separate Dateien unter docs/ verschoben (Einrichtung, Datenquellen, Steuerung & Statussynchronisierung, Objektreferenz, Fehlerbehebung). Übersichtlicher; keine funktionale Änderung."
+			},
 			"0.6.8": {
 				"en": "Fix: a button/dimmer module no longer explodes the object tree. The gateway sends element_* sub-topics (poll_device/<n>/element_button|pushbutton|slider|onoff|dimmer) for those modules; parseGet was flattening every field into a raw state (button_1..8, dimmer_1..4, ...). It now only flattens values/propertys; the element_* families are sampled (logged once) for proper button/dimmer mapping later, and existing leaked element_* states are cleaned up on sync.",
 				"de": "Fix: ein Tasten-/Dimmer-Modul lässt den Objektbaum nicht mehr explodieren. Das Gateway sendet element_*-Untertopics (poll_device/<n>/element_button|pushbutton|slider|onoff|dimmer) für diese Module; parseGet hat jedes Feld in einen rohen State umgewandelt (button_1..8, dimmer_1..4, ...). Es werden jetzt nur noch values/propertys übernommen; die element_*-Familien werden protokolliert (einmalig) für eine spätere saubere Tasten-/Dimmer-Zuordnung, und vorhandene element_*-States werden beim Sync entfernt."
