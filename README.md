@@ -94,9 +94,9 @@ Casambi app. The adapter derives each device's control scene and reports gaps in
 
 ## Objects
 
-> With the **cloud catalog** enabled, devices are keyed by their stable **uuid**
-> (`devices.<uuid>`, name/`deviceId`/`address`/`type`/`controlScene`) and scenes by id; the MQTT
-> tree below is the **gateway-only** (no-cloud) layout. `info.lastSync`,
+> With the **cloud catalog** enabled, devices are keyed by their **BLE address**
+> (`devices.<address>`, name/`deviceId`/`uuid`/`type`/`controlScene` + live `level`/`on`/health) and
+> scenes by id; the MQTT tree below is the **gateway-only** (no-cloud) layout. `info.lastSync`,
 > `info.devicesWithoutControlScene`, `info.devicesWithMultipleControlScenes` and
 > `control.syncNow` are added in cloud mode. A device with **exactly one** control scene exposes
 > **writable** `level`/`on` (a write recalls that scene); devices with none/multiple stay read-only.
@@ -140,6 +140,10 @@ topic. `sensors` and `buttons` are inputs the adapter injects (`Injectable butto
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
+
+### 0.6.0 (2026-06-25)
+* (DutchmanNL) Live MQTT mapping onto the cloud catalog: device `level`/`on`, scene `active`, broadcast and device health (`online`/`condition`/`battery_level`/colour) update in real time
+* (DutchmanNL) Device states are now keyed by the **BLE address** (`devices.<address>`) instead of the uuid — shorter and more readable; stale uuid-keyed channels are cleaned up on sync
 
 ### 0.5.0 (2026-06-25)
 * (DutchmanNL) Per-device control for unambiguous devices: a device with exactly one control scene gets writable `level`/`on` that recall that scene (devices with no/multiple control scenes stay read-only)

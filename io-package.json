@@ -1,8 +1,12 @@
 {
 	"common": {
 		"name": "casambi-lithernet",
-		"version": "0.5.0",
+		"version": "0.6.0",
 		"news": {
+			"0.6.0": {
+				"en": "Live MQTT state mapping onto the cloud catalog: device level/on, scene active, broadcast and device health (online/condition/battery/colour) now update in real time. Device states are now keyed by the shorter, readable BLE address instead of the uuid (stale uuid channels are cleaned up on sync).",
+				"de": "Live-MQTT-Statuszuordnung auf den Cloud-Katalog: Geräte-level/on, Szenen-active, Broadcast und Gerätezustand (online/condition/battery/colour) werden jetzt in Echtzeit aktualisiert. Gerätezustände werden jetzt über die kürzere, lesbarere BLE-Adresse statt der uuid adressiert (veraltete uuid-Kanäle werden bei der Synchronisierung entfernt)."
+			},
 			"0.5.0": {
 				"en": "Per-device control for unambiguous devices: a device that has exactly one control scene now exposes writable level/on - a write recalls that scene (no per-device set topic exists). Devices with no/multiple control scenes stay read-only.",
 				"de": "Gerätesteuerung für eindeutige Geräte: ein Gerät mit genau einer Steuerszene stellt jetzt beschreibbares level/on bereit - ein Schreibvorgang ruft diese Szene auf (es gibt kein Set-Topic pro Gerät). Geräte ohne/mit mehreren Steuerszenen bleiben schreibgeschützt."

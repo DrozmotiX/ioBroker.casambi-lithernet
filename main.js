@@ -36,15 +36,15 @@ function buildNameMap(rows) {
 }
 
 /**
- * Recognise a cloud device-control write: devices.<uuid>.level / .on (uuid has no dots).
+ * Recognise a cloud device-control write: devices.<key>.level / .on (key = BLE address, no dots).
  *
  * @param {string} id - full state id
- * @returns {{uuid: string, leaf: string}|null} parsed control ref, or null
+ * @returns {{key: string, leaf: string}|null} parsed control ref, or null
  */
 function parseDeviceControl(id) {
 	const rel = id.split('.').slice(2);
 	if (rel.length === 3 && rel[0] === 'devices' && (rel[2] === 'level' || rel[2] === 'on')) {
-		return { uuid: rel[1], leaf: rel[2] };
+		return { key: rel[1], leaf: rel[2] };
 	}
 	return null;
 }
@@ -82,15 +82,16 @@ class CasambiLithernet extends utils.Adapter {
 		// over MQTT (no set topic), but `level` shares the writable control-channel leaf, so it is
 		// overridden to write:false once per device. Cleared when a device's tree is removed.
 		this.deviceLevelReadonly = new Set();
-		// Cloud enrichment (optional): deviceId -> unit uuid, used to route live MQTT feedback
-		// onto the uuid-keyed device tree built from the cloud (live routing = next step).
-		this.deviceIdToUuid = {};
+		// Cloud catalog: deviceId -> device key (BLE address) to route live MQTT feedback onto the
+		// address-keyed device tree; cloudScenes = padded scene keys the catalog built (for routing).
+		this.deviceIdToKey = {};
+		this.cloudScenes = new Set();
 		// True once the cloud catalog has been built; gates MQTT so it doesn't build a parallel
 		// (deviceId-keyed) tree. If the cloud fails, this stays false and MQTT discovery runs.
 		this.cloudActive = false;
 		this.syncTimer = undefined;
-		// uuid -> control sceneId, ONLY for devices with exactly one single-member control scene.
-		// Those devices get writable level/on that recall the scene (see onStateChange).
+		// device key (BLE address) -> control sceneId, ONLY for devices with exactly one
+		// single-member control scene. Those get writable level/on that recall the scene.
 		this.deviceControlScene = {};
 
 		this.on('ready', this.onReady.bind(this));
@@ -232,12 +233,6 @@ class CasambiLithernet extends utils.Adapter {
 			parsed.devices = parsed.devices.filter(d => cloudModel.inRange(d.deviceId, devRange));
 			parsed.scenes = parsed.scenes.filter(s => cloudModel.inRange(s.sceneId, scnRange));
 			parsed.coverage = cloudModel.coverage(parsed.devices, parsed.scenes);
-			this.deviceIdToUuid = {};
-			for (const d of parsed.devices) {
-				if (d.deviceId != null && d.uuid) {
-					this.deviceIdToUuid[d.deviceId] = d.uuid;
-				}
-			}
 			await this.buildCloudTree(parsed);
 			await this.reportCoverage(parsed.coverage);
 			this.cloudActive = true;
@@ -304,11 +299,17 @@ class CasambiLithernet extends utils.Adapter {
 	 */
 	async buildCloudTree(parsed) {
 		this.deviceControlScene = {};
+		this.deviceIdToKey = {};
+		this.cloudScenes = new Set();
+		const builtKeys = new Set();
 		for (const d of parsed.devices) {
-			if (!d.uuid) {
+			const key = d.address || d.uuid; // prefer the short, readable BLE address
+			if (!key) {
 				continue;
 			}
-			const base = `devices.${d.uuid}`;
+			this.deviceIdToKey[d.deviceId] = key;
+			builtKeys.add(key);
+			const base = `devices.${key}`;
 			const name = d.name || `Device ${d.deviceId}`;
 			await this.setObjectNotExistsAsync(base, {
 				type: 'channel',
@@ -333,7 +334,7 @@ class CasambiLithernet extends utils.Adapter {
 			// the live readback (filled by MQTT in the next step).
 			const controllable = Array.isArray(d.controlScenes) && d.controlScenes.length === 1;
 			if (controllable) {
-				this.deviceControlScene[d.uuid] = d.controlScenes[0];
+				this.deviceControlScene[key] = d.controlScenes[0];
 			}
 			await this.ensureCloudState(`${base}.level`, 'Level', 'number', 'level.dimmer', controllable);
 			await this.ensureCloudState(`${base}.on`, 'On', 'boolean', 'switch.light', controllable);
@@ -342,7 +343,9 @@ class CasambiLithernet extends utils.Adapter {
 			await this.extendObjectAsync(`${base}.on`, { common: { write: controllable } });
 		}
 		for (const s of parsed.scenes) {
-			const base = `scenes.${casambi.padIndex(s.sceneId)}`;
+			const padded = casambi.padIndex(s.sceneId);
+			this.cloudScenes.add(padded);
+			const base = `scenes.${padded}`;
 			const name = s.name || `Scene ${s.sceneId}`;
 			await this.setObjectNotExistsAsync(base, {
 				type: 'channel',
@@ -361,6 +364,20 @@ class CasambiLithernet extends utils.Adapter {
 				false,
 				JSON.stringify(s.members),
 			);
+		}
+		// Remove stale device channels (e.g. old uuid-keyed ones after switching to address keys,
+		// or devices removed from the network) so the tree matches the current catalog.
+		try {
+			const chans = await this.getForeignObjectsAsync(`${this.namespace}.devices.*`, 'channel');
+			for (const id of Object.keys(chans || {})) {
+				const key = id.split('.').pop();
+				if (!builtKeys.has(key)) {
+					await this.delForeignObjectAsync(id, { recursive: true });
+					this.log.debug(`Removed stale device channel ${key}`);
+				}
+			}
+		} catch (error) {
+			this.log.debug(`device reconcile: ${error.message}`);
 		}
 	}
 
@@ -387,16 +404,66 @@ class CasambiLithernet extends utils.Adapter {
 	}
 
 	/**
+	 * Route live MQTT feedback onto the cloud catalog (cloud mode): devices re-keyed by BLE
+	 * address (deviceId->key), scenes by padded id; only known catalog entries are updated.
+	 *
+	 * @param {string} topic - MQTT topic
+	 * @param {object} payload - JSON payload
+	 * @returns {Promise<void>}
+	 */
+	async routeLiveFeedback(topic, payload) {
+		const tree = casambi.parseGet(topic, payload, this.cfg);
+		if (!tree) {
+			return;
+		}
+		const out = {};
+		if (tree.devices) {
+			const devs = {};
+			for (const [padded, node] of Object.entries(tree.devices)) {
+				const key = this.deviceIdToKey[parseInt(padded, 10)];
+				if (key) {
+					devs[key] = node;
+				}
+			}
+			if (Object.keys(devs).length) {
+				out.devices = devs;
+			}
+		}
+		if (tree.scenes) {
+			const scn = {};
+			for (const [padded, node] of Object.entries(tree.scenes)) {
+				if (this.cloudScenes.has(padded)) {
+					scn[padded] = node;
+				}
+			}
+			if (Object.keys(scn).length) {
+				out.scenes = scn;
+			}
+		}
+		if (tree.broadcast) {
+			out.broadcast = tree.broadcast;
+		}
+		if (tree.ungrouped) {
+			out.ungrouped = tree.ungrouped;
+		}
+		if (Object.keys(out).length) {
+			await jsonExplorer.traverseJson(out, '', false, false, 0);
+		}
+	}
+
+	/**
 	 * Handle a feedback message published by the gateway (get/...).
 	 *
 	 * @param {string} topic - full MQTT topic
 	 * @param {object} payload - JSON-parsed payload
 	 */
 	async handleFeedback(topic, payload) {
-		// Once the cloud catalog is built (uuid-keyed), routing live MQTT values onto it is the
-		// next step - so don't let MQTT build a parallel (deviceId-keyed) tree in the meantime.
-		// If the cloud failed/disabled, cloudActive is false and MQTT discovery runs as fallback.
+		// Cloud mode: route live MQTT feedback onto the address-keyed cloud catalog (devices by
+		// BLE address via deviceId->key, scenes by padded id, broadcast/ungrouped as-is); only
+		// known catalog entries are updated. If the cloud failed/disabled, fall through to the
+		// legacy deviceId-keyed MQTT discovery.
 		if (this.cloudActive) {
+			await this.routeLiveFeedback(topic, payload);
 			return;
 		}
 
@@ -611,7 +678,7 @@ class CasambiLithernet extends utils.Adapter {
 		// recalls that device's control scene - there is no per-device set topic on the gateway.
 		const dctl = parseDeviceControl(id);
 		if (dctl) {
-			const sceneId = this.deviceControlScene[dctl.uuid];
+			const sceneId = this.deviceControlScene[dctl.key];
 			if (sceneId == null) {
 				return; // read-only device (no / multiple control scenes)
 			}
@@ -621,7 +688,7 @@ class CasambiLithernet extends utils.Adapter {
 			if (command) {
 				this.broker.publish(command.topic, command.payload);
 				this.setState(id, { val: state.val, ack: true });
-				this.log.debug(`Device ${dctl.uuid} ${dctl.leaf}=${state.val} -> recall scene ${sceneId}`);
+				this.log.debug(`Device ${dctl.key} ${dctl.leaf}=${state.val} -> recall scene ${sceneId}`);
 			}
 			return;
 		}
