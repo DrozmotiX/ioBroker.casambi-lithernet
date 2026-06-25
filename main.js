@@ -49,6 +49,20 @@ function parseDeviceControl(id) {
 	return null;
 }
 
+/**
+ * Recognise a control-scene picker write: devices.<key>.controlSceneSelect (key = BLE address).
+ *
+ * @param {string} id - full state id
+ * @returns {{key: string}|null} parsed ref, or null
+ */
+function parseControlSelect(id) {
+	const rel = id.split('.').slice(2);
+	if (rel.length === 3 && rel[0] === 'devices' && rel[2] === 'controlSceneSelect') {
+		return { key: rel[1] };
+	}
+	return null;
+}
+
 class CasambiLithernet extends utils.Adapter {
 	/**
 	 * @param {Partial<utils.AdapterOptions>} [options] - Adapter options
@@ -99,13 +113,12 @@ class CasambiLithernet extends utils.Adapter {
 		// scene (a lone single-member candidate, or the owner's manual pick). Those get writable
 		// level/on that recall the scene; ambiguous devices stay read-only until assigned.
 		this.deviceControlScene = {};
-		// Last parsed+range-filtered cloud model, cached so the admin "Control mapping" selector
-		// (selectSendTo) can offer scene options without a fresh cloud fetch.
+		// Last parsed+range-filtered cloud model, cached so a control-scene pick (controlSceneSelect)
+		// can be applied live against the current catalog without a fresh cloud fetch.
 		this.lastParsed = null;
 
 		this.on('ready', this.onReady.bind(this));
 		this.on('stateChange', this.onStateChange.bind(this));
-		this.on('message', this.onMessage.bind(this));
 		this.on('unload', this.onUnload.bind(this));
 
 		jsonExplorer.init(this, stateAttr);
@@ -291,57 +304,6 @@ class CasambiLithernet extends utils.Adapter {
 	}
 
 	/**
-	 * Admin message handler. Serves the "Control mapping" tab's scene picker (selectSendTo):
-	 * returns one option per candidate scene of each ambiguous device (multiple single-member
-	 * scenes), labelled "<device> -> <scene>" with the sceneId as value. The chosen scene
-	 * uniquely identifies its device, so no separate device column is needed.
-	 *
-	 * @param {ioBroker.Message} obj - incoming adapter message
-	 * @returns {void}
-	 */
-	onMessage(obj) {
-		if (!obj || typeof obj !== 'object' || !obj.command) {
-			return;
-		}
-		if (obj.command === 'getControlSceneOptions') {
-			const options = this.buildControlSceneOptions();
-			if (obj.callback) {
-				this.sendTo(obj.from, obj.command, options, obj.callback);
-			}
-		}
-	}
-
-	/**
-	 * Build the scene-picker options from the last synced cloud catalog: every candidate scene of
-	 * each device that has MORE than one single-member control scene (the ambiguous devices that
-	 * need a manual choice). Empty until the first successful cloud sync.
-	 *
-	 * @returns {Array<{value: number, label: string}>} selectSendTo options
-	 */
-	buildControlSceneOptions() {
-		const parsed = this.lastParsed;
-		if (!parsed || !Array.isArray(parsed.devices)) {
-			return [];
-		}
-		const sceneName = {};
-		for (const s of parsed.scenes) {
-			sceneName[s.sceneId] = s.name;
-		}
-		const options = [];
-		for (const d of parsed.devices) {
-			const cands = Array.isArray(d.controlScenes) ? d.controlScenes : [];
-			if (cands.length <= 1) {
-				continue; // unambiguous (auto) or uncontrollable - no choice to make
-			}
-			const dn = d.name || `Device ${d.deviceId}`;
-			for (const sid of cands) {
-				options.push({ value: sid, label: `${dn} -> ${sceneName[sid] || `Scene ${sid}`} (#${sid})` });
-			}
-		}
-		return options;
-	}
-
-	/**
 	 * (Re)schedule the periodic cloud re-sync from the configured interval (minutes; 0 = off).
 	 *
 	 * @returns {void}
@@ -371,14 +333,14 @@ class CasambiLithernet extends utils.Adapter {
 		this.deviceIdToKey = {};
 		this.cloudScenes = new Set();
 		const builtKeys = new Set();
-		// Owner's manual device->scene assignments (admin "Control mapping" tab) + a sceneId->name
-		// lookup for the actionable warning, and the list of devices still awaiting a manual pick.
-		const manualMap = cloudModel.manualMapFromConfig(parsed.scenes, this.config.controlSceneMap);
 		const sceneName = {};
 		for (const s of parsed.scenes) {
 			sceneName[s.sceneId] = s.name;
 		}
-		const unresolved = [];
+		// Owner's manual control-scene picks are PERSISTED in each ambiguous device's
+		// controlSceneSelect state (survive restarts + cloud re-sync); read them back into a
+		// deviceId->sceneId map. resolveControlScene validates each is a real candidate.
+		const manualMap = await this.readManualAssignments(parsed.devices);
 		for (const d of parsed.devices) {
 			const key = d.address || d.uuid; // prefer the short, readable BLE address
 			if (!key) {
@@ -407,14 +369,6 @@ class CasambiLithernet extends utils.Adapter {
 			if (controllable) {
 				this.deviceControlScene[key] = res.sceneId;
 			}
-			if (res.status === 'unresolved') {
-				unresolved.push({
-					device: name,
-					deviceId: d.deviceId,
-					address: key, // the devices.<address> tree key
-					candidates: d.controlScenes.map(sid => ({ sceneId: sid, name: sceneName[sid] || `Scene ${sid}` })),
-				});
-			}
 			// Always (re)write the resolved control scene - including null - so an unresolved or
 			// re-assigned device clears the previous value. ensureCloudState skips null, so set it
 			// explicitly after the object exists.
@@ -425,17 +379,17 @@ class CasambiLithernet extends utils.Adapter {
 			// Keep write-ability in sync on re-sync (scene added/removed since last run).
 			await this.extendObjectAsync(`${base}.level`, { common: { write: controllable } });
 			await this.extendObjectAsync(`${base}.on`, { common: { write: controllable } });
+			// Only AMBIGUOUS devices (several single-member scenes) need a manual choice, so they get
+			// a writable picker state - the admin Objects view renders common.states as a dropdown of
+			// the candidate scenes by name. Choosing one assigns control live (see onStateChange).
+			// Non-ambiguous devices auto-map (or are uncontrollable), so any stale picker is removed.
+			await this.syncControlSceneSelect(base, d, res, sceneName);
 		}
-		// Tell the owner exactly which devices still need a control scene chosen (they stay
-		// read-only until then). Emit as JSON so it is readable/parseable: each entry has the
-		// device name + deviceId + the `address` tree key, and its candidate scenes as
-		// {sceneId, name} - assign one of those sceneIds in Settings -> Control mapping. The same
-		// JSON is published to info.devicesNeedingControlScene for viewing without the log.
-		const unresolvedJson = JSON.stringify(unresolved);
-		await this.setState('info.devicesNeedingControlScene', unresolvedJson, true);
-		if (unresolved.length) {
+		// Publish (and warn about) the devices still awaiting a manual control-scene pick.
+		const needed = await this.publishNeeded(parsed);
+		if (needed.length) {
 			this.log.warn(
-				`Control scene NOT set for ${unresolved.length} device(s) - they stay read-only until you assign one in Settings -> Control mapping (pick one candidate sceneId per device): ${unresolvedJson}`,
+				`Control scene NOT set for ${needed.length} device(s) - they stay read-only until you pick one in the device's controlSceneSelect dropdown (Objects view). Details: ${JSON.stringify(needed)}`,
 			);
 		}
 		for (const s of parsed.scenes) {
@@ -475,6 +429,143 @@ class CasambiLithernet extends utils.Adapter {
 		} catch (error) {
 			this.log.debug(`device reconcile: ${error.message}`);
 		}
+	}
+
+	/**
+	 * Read the owner's persisted control-scene picks from each device's controlSceneSelect state
+	 * (value = chosen sceneId; the -1 sentinel / null means unassigned) into a deviceId->sceneId
+	 * map. Survives restarts and cloud re-syncs without touching the adapter config.
+	 *
+	 * @param {Array<{deviceId: number, address: string, uuid: string}>} devices - parsed devices
+	 * @returns {Promise<Object<number, number>>} deviceId -> chosen sceneId
+	 */
+	async readManualAssignments(devices) {
+		const addrToDeviceId = {};
+		for (const d of devices) {
+			addrToDeviceId[d.address || d.uuid] = d.deviceId;
+		}
+		const map = {};
+		let states = {};
+		try {
+			states = (await this.getStatesAsync(`${this.namespace}.devices.*.controlSceneSelect`)) || {};
+		} catch (error) {
+			this.log.debug(`readManualAssignments: ${error.message}`);
+		}
+		for (const [id, st] of Object.entries(states)) {
+			const sceneId = st == null ? NaN : Number(st.val);
+			if (!(sceneId > 0)) {
+				continue; // -1 sentinel / null / cleared
+			}
+			const addr = id.split('.')[3]; // <ns>.<inst>.devices.<addr>.controlSceneSelect
+			const deviceId = addrToDeviceId[addr];
+			if (deviceId != null) {
+				map[deviceId] = sceneId;
+			}
+		}
+		return map;
+	}
+
+	/**
+	 * Create/refresh the writable control-scene picker for an ambiguous device (admin renders
+	 * common.states as a dropdown of its candidate scenes by name; -1 = unchosen). Removes the
+	 * picker from a device that is no longer ambiguous.
+	 *
+	 * @param {string} base - devices.<address>
+	 * @param {{controlScenes: number[]}} device - parsed device
+	 * @param {{sceneId: number|null, status: string}} res - resolution from resolveControlScene
+	 * @param {Object<number, string>} sceneName - sceneId -> name
+	 * @returns {Promise<void>}
+	 */
+	async syncControlSceneSelect(base, device, res, sceneName) {
+		const id = `${base}.controlSceneSelect`;
+		const candidates = Array.isArray(device.controlScenes) ? device.controlScenes : [];
+		if (candidates.length <= 1) {
+			await this.delObjectAsync(id).catch(() => {});
+			return;
+		}
+		const states = { '-1': '— choose a control scene —' };
+		for (const sid of candidates) {
+			states[String(sid)] = sceneName[sid] || `Scene ${sid}`;
+		}
+		await this.setObjectNotExistsAsync(id, {
+			type: 'state',
+			common: {
+				name: 'Assign control scene',
+				type: 'number',
+				role: 'value',
+				read: true,
+				write: true,
+				states,
+				def: -1,
+			},
+			native: {},
+		});
+		await this.extendObjectAsync(id, { common: { states, write: true } });
+		await this.setState(id, { val: res.status === 'manual' ? res.sceneId : -1, ack: true });
+	}
+
+	/**
+	 * Publish the list of devices still awaiting a manual control-scene pick (ambiguous and not yet
+	 * resolved) to info.devicesNeedingControlScene as JSON, and return it.
+	 *
+	 * @param {{devices: Array, scenes: Array}} parsed - parsed cloud model
+	 * @returns {Promise<Array<object>>} the needed-action list
+	 */
+	async publishNeeded(parsed) {
+		const sceneName = {};
+		for (const s of parsed.scenes) {
+			sceneName[s.sceneId] = s.name;
+		}
+		const needed = [];
+		for (const d of parsed.devices) {
+			const key = d.address || d.uuid;
+			const candidates = Array.isArray(d.controlScenes) ? d.controlScenes : [];
+			if (candidates.length > 1 && this.deviceControlScene[key] == null) {
+				needed.push({
+					device: d.name || `Device ${d.deviceId}`,
+					deviceId: d.deviceId,
+					address: key,
+					candidates: candidates.map(sid => ({ sceneId: sid, name: sceneName[sid] || `Scene ${sid}` })),
+				});
+			}
+		}
+		await this.setState('info.devicesNeedingControlScene', JSON.stringify(needed), true);
+		return needed;
+	}
+
+	/**
+	 * Apply a control-scene pick made via a device's controlSceneSelect dropdown: validate the
+	 * sceneId is one of the device's candidates, then update control routing, the controlScene
+	 * state, level/on writability and the needs-action list - all live, no restart.
+	 *
+	 * @param {string} key - device address (tree key)
+	 * @param {*} val - chosen sceneId (>0) or the -1/null clear sentinel
+	 * @returns {Promise<void>}
+	 */
+	async applyControlSceneSelect(key, val) {
+		const parsed = this.lastParsed;
+		if (!parsed) {
+			return;
+		}
+		const d = parsed.devices.find(x => (x.address || x.uuid) === key);
+		if (!d) {
+			return;
+		}
+		const candidates = Array.isArray(d.controlScenes) ? d.controlScenes : [];
+		const num = Number(val);
+		const sceneId = num > 0 && candidates.includes(num) ? num : null;
+		const base = `devices.${key}`;
+		if (sceneId != null) {
+			this.deviceControlScene[key] = sceneId;
+		} else {
+			delete this.deviceControlScene[key];
+		}
+		await this.setState(`${base}.controlScene`, { val: sceneId, ack: true });
+		await this.extendObjectAsync(`${base}.level`, { common: { write: sceneId != null } });
+		await this.extendObjectAsync(`${base}.on`, { common: { write: sceneId != null } });
+		await this.setState(`${base}.controlSceneSelect`, { val: sceneId != null ? sceneId : -1, ack: true });
+		await this.publishNeeded(parsed);
+		this.log.info(`Control scene for "${d.name}" (${key}) ${sceneId != null ? `set to ${sceneId}` : 'cleared'}.`);
 	}
 
 	/**
@@ -786,6 +877,14 @@ class CasambiLithernet extends utils.Adapter {
 		if (id.endsWith('.control.syncNow') && state.val) {
 			this.log.info('Manual cloud sync requested.');
 			this.bootstrapCloud().finally(() => this.setState(id, { val: false, ack: true }));
+			return;
+		}
+		// Owner picked a control scene for an ambiguous device (Objects view dropdown) - apply live.
+		const sel = parseControlSelect(id);
+		if (sel) {
+			this.applyControlSceneSelect(sel.key, state.val).catch(error =>
+				this.log.warn(`Control-scene select for ${sel.key} failed: ${error.message}`),
+			);
 			return;
 		}
 		if (!this.broker) {
