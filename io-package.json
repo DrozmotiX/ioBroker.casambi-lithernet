@@ -183,7 +183,9 @@
 		"cloudEnabled": true,
 		"cloudUuid": "",
 		"cloudPassword": "",
-		"cloudSyncInterval": 60
+		"cloudSyncInterval": 60,
+		"cloudDeviceRange": "0-*",
+		"cloudSceneRange": "0-*"
 	},
 	"objects": [],
 	"instanceObjects": [

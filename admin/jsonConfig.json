@@ -191,6 +191,21 @@
 					"hidden": "!data.cloudEnabled",
 					"newLine": true,
 					"xs": 12, "sm": 12, "md": 6, "lg": 4, "xl": 4
+				},
+				"cloudDeviceRange": {
+					"type": "text",
+					"label": "Build device range",
+					"help": "Which device IDs to build objects for. \"0-*\" = all, e.g. \"1-30\" or \"5\". Useful to try a subset.",
+					"hidden": "!data.cloudEnabled",
+					"newLine": true,
+					"xs": 12, "sm": 12, "md": 6, "lg": 4, "xl": 4
+				},
+				"cloudSceneRange": {
+					"type": "text",
+					"label": "Build scene range",
+					"help": "Which scene IDs to build objects for. \"0-*\" = all, e.g. \"1-80\".",
+					"hidden": "!data.cloudEnabled",
+					"xs": 12, "sm": 12, "md": 6, "lg": 4, "xl": 4
 				}
 			}
 		}

@@ -107,6 +107,7 @@ topic. `sensors` and `buttons` are inputs the adapter injects (`Injectable butto
 * (DutchmanNL) Builds a uuid-keyed device tree with names/capabilities and derives each device's single-member control scene; live MQTT mapping follows in a later step
 * (DutchmanNL) Sync: poll at start + configurable auto-sync interval + `control.syncNow` button + `info.lastSync`
 * (DutchmanNL) Scene-coverage diagnostics: `info.devicesWithoutControlScene` / `info.devicesWithMultipleControlScenes` (+ log warnings) to troubleshoot the one-scene-per-device setup
+* (DutchmanNL) Optional build-range filter for devices and scenes (default `0-*` = all, e.g. `1-30`) to build objects for a subset while testing
 
 ### 0.3.3 (2026-06-25)
 * (DutchmanNL) Device states are now read-only (the gateway has no per-device set topic over MQTT)

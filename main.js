@@ -209,7 +209,18 @@ class CasambiLithernet extends utils.Adapter {
 			this.log.info('Cloud: fetching network metadata...');
 			const data = await cloud.fetchNetworkData(uuid, password);
 			const parsed = cloudModel.parseNetwork(data.network);
-			this.deviceIdToUuid = parsed.deviceIdToUuid;
+			// Optional build-range filter (default "0-*" = all) to try a subset of ids.
+			const devRange = cloudModel.parseRange(this.config.cloudDeviceRange);
+			const scnRange = cloudModel.parseRange(this.config.cloudSceneRange);
+			parsed.devices = parsed.devices.filter(d => cloudModel.inRange(d.deviceId, devRange));
+			parsed.scenes = parsed.scenes.filter(s => cloudModel.inRange(s.sceneId, scnRange));
+			parsed.coverage = cloudModel.coverage(parsed.devices, parsed.scenes);
+			this.deviceIdToUuid = {};
+			for (const d of parsed.devices) {
+				if (d.deviceId != null && d.uuid) {
+					this.deviceIdToUuid[d.deviceId] = d.uuid;
+				}
+			}
 			await this.buildCloudTree(parsed);
 			await this.reportCoverage(parsed.coverage);
 			this.cloudActive = true;
