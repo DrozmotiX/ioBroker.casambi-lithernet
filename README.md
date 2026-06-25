@@ -141,6 +141,9 @@ topic. `sensors` and `buttons` are inputs the adapter injects (`Injectable butto
 	### **WORK IN PROGRESS**
 -->
 
+### 0.6.3 (2026-06-25)
+* (DutchmanNL) Per-device **control scene mapping**: a device with exactly one single-member scene auto-maps as before; a device with **several** candidates is no longer silently mapped to the lowest id — it stays read-only and is **named in the log** until you assign its control scene in the new admin **Control mapping** tab (pick the scene by name; `uniqueColumns` prevents reusing a scene). Each single-member scene controls exactly one device, so choosing the scene is enough
+
 ### 0.6.2 (2026-06-25)
 * (DutchmanNL) Diagnostic: unmapped gateway feedback topics (e.g. the `element_*` battery/button family) are now logged once at info level, deduplicated by topic shape — captures new payloads for mapping without raising the instance to debug. No behaviour change
 
