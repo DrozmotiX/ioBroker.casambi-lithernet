@@ -4,8 +4,8 @@
 		"version": "0.6.4",
 		"news": {
 			"0.6.4": {
-				"en": "Fix: the controlScene state of an unresolved (multiple-scene) or re-assigned device now clears to null instead of keeping a stale lowest-id value, so it always reflects the real control scene (or none). Read-only gating was already correct; this fixes only the displayed value.",
-				"de": "Fix: der controlScene-State eines nicht zugeordneten (Mehrfach-Szenen-) oder neu zugewiesenen Geräts wird jetzt auf null zurückgesetzt, statt einen veralteten niedrigsten-ID-Wert zu behalten, sodass er stets die echte Steuerszene (oder keine) widerspiegelt. Das Schreibschutz-Verhalten war bereits korrekt; dies korrigiert nur den angezeigten Wert."
+				"en": "Fix: the controlScene state of an unresolved (multiple-scene) or re-assigned device now clears to null instead of keeping a stale lowest-id value. The 'control scene not set' warning is now JSON (device name + deviceId + address tree key + candidate scenes as {sceneId, name}) and is also published to info.devicesNeedingControlScene, so it is readable and tells you exactly which sceneId to assign.",
+				"de": "Fix: der controlScene-State eines nicht zugeordneten (Mehrfach-Szenen-) oder neu zugewiesenen Geräts wird jetzt auf null zurückgesetzt, statt einen veralteten niedrigsten-ID-Wert zu behalten. Die Warnung 'Steuerszene nicht gesetzt' ist jetzt JSON (Gerätename + deviceId + address-Baum-Schlüssel + Kandidatenszenen als {sceneId, name}) und wird zusätzlich nach info.devicesNeedingControlScene geschrieben, sodass sie lesbar ist und genau zeigt, welche sceneId zuzuweisen ist."
 			},
 			"0.6.3": {
 				"en": "Per-device control scene mapping: a device with exactly one single-member scene is mapped automatically; a device with several is no longer silently mapped to the lowest id - it stays read-only and is listed in the log until you assign its control scene in the new admin 'Control mapping' tab (pick the scene by name; each scene controls one device). Resolves the ambiguous-control-scene devices.",

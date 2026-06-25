@@ -195,6 +195,13 @@ class CasambiLithernet extends utils.Adapter {
 				'json',
 				false,
 			);
+			await this.ensureCloudState(
+				'info.devicesNeedingControlScene',
+				'Devices awaiting a control-scene assignment (JSON)',
+				'string',
+				'json',
+				false,
+			);
 			await this.ensureCloudState('control.syncNow', 'Sync cloud now', 'boolean', 'button', true);
 		}
 		await this.bootstrapCloud();
@@ -401,7 +408,12 @@ class CasambiLithernet extends utils.Adapter {
 				this.deviceControlScene[key] = res.sceneId;
 			}
 			if (res.status === 'unresolved') {
-				unresolved.push({ deviceId: d.deviceId, name, candidates: d.controlScenes });
+				unresolved.push({
+					device: name,
+					deviceId: d.deviceId,
+					address: key, // the devices.<address> tree key
+					candidates: d.controlScenes.map(sid => ({ sceneId: sid, name: sceneName[sid] || `Scene ${sid}` })),
+				});
 			}
 			// Always (re)write the resolved control scene - including null - so an unresolved or
 			// re-assigned device clears the previous value. ensureCloudState skips null, so set it
@@ -415,16 +427,15 @@ class CasambiLithernet extends utils.Adapter {
 			await this.extendObjectAsync(`${base}.on`, { common: { write: controllable } });
 		}
 		// Tell the owner exactly which devices still need a control scene chosen (they stay
-		// read-only until then) - named, with their candidate scenes, so it can be set after a
-		// reboot via Settings -> Control mapping.
+		// read-only until then). Emit as JSON so it is readable/parseable: each entry has the
+		// device name + deviceId + the `address` tree key, and its candidate scenes as
+		// {sceneId, name} - assign one of those sceneIds in Settings -> Control mapping. The same
+		// JSON is published to info.devicesNeedingControlScene for viewing without the log.
+		const unresolvedJson = JSON.stringify(unresolved);
+		await this.setState('info.devicesNeedingControlScene', unresolvedJson, true);
 		if (unresolved.length) {
 			this.log.warn(
-				`Control scene NOT set (device stays read-only - choose one in Settings -> Control mapping): ${unresolved
-					.map(
-						u =>
-							`"${u.name}" (id ${u.deviceId}) candidates [${u.candidates.map(id => `${sceneName[id] || id}`).join(', ')}]`,
-					)
-					.join('; ')}`,
+				`Control scene NOT set for ${unresolved.length} device(s) - they stay read-only until you assign one in Settings -> Control mapping (pick one candidate sceneId per device): ${unresolvedJson}`,
 			);
 		}
 		for (const s of parsed.scenes) {
