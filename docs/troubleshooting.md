@@ -19,6 +19,24 @@
 - **Cloud sync fails (`info.lastSync` not advancing).** Re-check the **Network UUID** (the short
   network id, not the app iBeacon UUID) and **network password** in the Cloud tab.
 
+## Known issues
+
+- **Can't assign a device to a multi-member scene (e.g. "connect device to scene 3 fails").**
+  *Working as designed.* A device's `controlScene` can only be a **single-member** scene — one
+  whose sole member is that device. The adapter excludes multi-member scenes from a device's
+  candidate list, so they never appear in `controlSceneSelect` and a direct write is ignored.
+
+  Example: device `8deac71d74bf` (Casambi deviceId **18**) is mapped to scene **111** (`members: [18]`,
+  single → valid). Trying to switch it to scene **3** (`members: [18, 19]`) is rejected, because
+  recalling scene 3 would also drive device 19 to scene 3's preset — it isn't a clean per-device
+  handle. With only one valid candidate (111) the adapter auto-maps it and removes the
+  `controlSceneSelect` dropdown entirely, so there is no UI path to pick 3.
+
+  *Resolution:* to give device 18 a dedicated control handle, create a **single-member scene
+  containing only device 18** in the Casambi app/cloud (like 111 already is); it becomes a candidate
+  on the next sync. To drive a whole group, control the scene directly via `scenes.003` instead of
+  the device's `controlScene`.
+
 ## Limitations
 
 - Individual `devices.<address>` are controllable **only via a single-member control scene** — the
