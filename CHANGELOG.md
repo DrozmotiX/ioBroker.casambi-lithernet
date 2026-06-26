@@ -6,7 +6,7 @@ All notable changes to this adapter are documented here.
 	Placeholder for the next version (at the beginning of the line):
 	## **WORK IN PROGRESS**
 -->
-## **WORK IN PROGRESS** - Document multi-member scene control as a known issue
+## 0.8.0 (2026-06-26) - Document multi-member scene control as a known issue
 
 Documents a working-as-designed behaviour: a device can only be mapped to a single-member control scene, so attempts to assign it to a multi-member scene are intentionally rejected. Adds a worked example and the resolution to the troubleshooting guide.
 
