@@ -130,8 +130,13 @@ class CasambiLithernet extends utils.Adapter {
 		// physical change lands) - written verbatim that produced the on/off flip. While a command is
 		// in flight we ignore readbacks that still contradict the commanded on/off, until the gateway
 		// reflects it OR the window elapses (then reality wins, so a failed/lost command self-corrects
-		// to its true state instead of showing an assumed value). key -> { on, until }.
+		// to its true state instead of showing an assumed value). key -> { on, until, restore }.
 		this.deviceExpect = {};
+		// Per-device settle TIMEOUT timers. If a command produces no confirming readback within the
+		// settle window (e.g. it had no physical effect, so passive mode emits nothing), the timer
+		// fires and restores the load's last gateway-confirmed value - so our state can never be left
+		// showing an assumed value the device never reached. key -> timer.
+		this.deviceSettleTimers = {};
 
 		this.on('ready', this.onReady.bind(this));
 		this.on('stateChange', this.onStateChange.bind(this));
@@ -168,6 +173,9 @@ class CasambiLithernet extends utils.Adapter {
 			// the typical recall->readback latency; when it elapses, reality is accepted so a failed
 			// command reverts to the true state. 0 disables the settle filter.
 			commandSettleMs: Math.max(0, Number(this.config.commandSettleMs) || 2500),
+			// Delay (ms) between the two recalls of an OFF "override-then-zero" sequence (grab the load
+			// onto its control scene, then set 0). Long enough for the grab to register first.
+			offGrabDelayMs: Math.max(0, Number(this.config.offGrabDelayMs) || 300),
 		};
 
 		// Friendly channel names from the "Names" config tab (index -> name).
@@ -363,6 +371,10 @@ class CasambiLithernet extends utils.Adapter {
 			this.clearTimeout(timer);
 		}
 		this.deviceReadbackTimers = {};
+		for (const timer of Object.values(this.deviceSettleTimers)) {
+			this.clearTimeout(timer);
+		}
+		this.deviceSettleTimers = {};
 		this.deviceReadback = {};
 		this.deviceConfirmed = {};
 		this.deviceExpect = {};
@@ -783,13 +795,58 @@ class CasambiLithernet extends utils.Adapter {
 		if (casambi.settleReadback(pending, this.deviceExpect[key], Date.now()) === 'drop') {
 			return; // still contradicts the in-flight command - keep waiting (pre-change re-poll)
 		}
-		delete this.deviceExpect[key]; // command reflected, or window elapsed -> stop filtering
+		// Command reflected (or window elapsed): a real readback arrived, so stop filtering and cancel
+		// the restore timeout - the gateway's value is the truth now.
+		delete this.deviceExpect[key];
+		this.clearDeviceSettleTimer(key);
 		const changed = casambi.diffConfirmedReadback(pending, this.deviceConfirmed[key]);
 		const confirmed = this.deviceConfirmed[key] || (this.deviceConfirmed[key] = {});
 		for (const [field, val] of Object.entries(changed)) {
 			confirmed[field] = val;
 			this.setState(`devices.${key}.${field}`, { val, ack: true });
 		}
+	}
+
+	/**
+	 * Clear a device's settle-timeout timer if armed.
+	 *
+	 * @param {string} key - device key (BLE address)
+	 * @returns {void}
+	 */
+	clearDeviceSettleTimer(key) {
+		if (this.deviceSettleTimers[key]) {
+			this.clearTimeout(this.deviceSettleTimers[key]);
+			delete this.deviceSettleTimers[key];
+		}
+	}
+
+	/**
+	 * Settle-window timeout: a command got NO confirming readback in time (it had no observable
+	 * effect - e.g. an OFF could not override a foreign scene, or a recall was lost - so passive mode
+	 * emitted nothing). Restore the load's last gateway-confirmed value so our state reflects reality
+	 * instead of the assumed command value. If the command DID take effect a readback would have
+	 * arrived and cleared deviceExpect, so this never runs in that case.
+	 *
+	 * @param {string} key - device key (BLE address)
+	 * @returns {void}
+	 */
+	onSettleTimeout(key) {
+		delete this.deviceSettleTimers[key];
+		const expect = this.deviceExpect[key];
+		delete this.deviceExpect[key];
+		if (!expect || !expect.restore) {
+			return; // already confirmed, or no prior known value to restore to
+		}
+		const confirmed = this.deviceConfirmed[key] || (this.deviceConfirmed[key] = {});
+		for (const field of ['level', 'on']) {
+			if (expect.restore[field] !== undefined) {
+				confirmed[field] = expect.restore[field];
+				this.setState(`devices.${key}.${field}`, { val: expect.restore[field], ack: true });
+			}
+		}
+		this.log.debug(
+			`Device ${key}: command unconfirmed after ${this.cfg.commandSettleMs}ms (no effect) - restored to last known ${JSON.stringify(expect.restore)}`,
+		);
 	}
 
 	/**
@@ -1033,22 +1090,59 @@ class CasambiLithernet extends utils.Adapter {
 				return; // read-only device (no / multiple control scenes)
 			}
 			const maxLevel = this.cfg.levelScale === 'raw' ? 254 : 100;
-			const level = dctl.leaf === 'on' ? (state.val ? maxLevel : 0) : Number(state.val);
-			const command = casambi.buildCommand({ channel: 'scenes', index: sceneId, leaf: 'level' }, level, this.cfg);
-			if (command) {
-				this.broker.publish(command.topic, command.payload);
+			const target = dctl.leaf === 'on' ? (state.val ? maxLevel : 0) : Number(state.val);
+			// An OFF needs override-then-zero so it wins over a foreign (e.g. button) scene; a non-zero
+			// target overrides on its own. planDeviceLevels returns the recall sequence; the grab uses
+			// the load's last known level so there is no visible flash.
+			const current = (this.deviceConfirmed[dctl.key] && this.deviceConfirmed[dctl.key].level) || 0;
+			const levels = casambi.planDeviceLevels(target, current);
+			let published = false;
+			levels.forEach((lvl, i) => {
+				const command = casambi.buildCommand(
+					{ channel: 'scenes', index: sceneId, leaf: 'level' },
+					lvl,
+					this.cfg,
+				);
+				if (!command) {
+					return;
+				}
+				published = true;
+				if (i === 0) {
+					this.broker.publish(command.topic, command.payload);
+				} else {
+					// Space the follow-up recall(s) so the grab registers first.
+					this.setTimeout(() => {
+						if (this.broker) {
+							this.broker.publish(command.topic, command.payload);
+						}
+					}, this.cfg.offGrabDelayMs * i);
+				}
+			});
+			if (published) {
 				// Do NOT optimistically ack: the requested value already shows (the user's own
 				// ack:false write), and the gateway's poll_device readback confirms it (ack:true)
-				// within ~1-2s. Invalidate the confirmed snapshot so the next readback re-stamps
-				// ack:true even if the value is unchanged (e.g. commanding a load already in state),
-				// and open the settle window so the gateway's pre-change re-polls are ignored until
-				// it reflects the command (see flushDeviceReadback).
+				// within ~1-2s. Save the pre-command confirmed value for restore, invalidate the
+				// snapshot so the next readback re-stamps ack:true, open the settle window so pre-change
+				// re-polls are ignored, and arm the settle timeout so an UNCONFIRMED command (no readback
+				// at all - e.g. it had no physical effect) reverts to the last known value.
+				const restore = this.deviceConfirmed[dctl.key] ? { ...this.deviceConfirmed[dctl.key] } : null;
 				delete this.deviceConfirmed[dctl.key];
 				if (this.cfg.commandSettleMs > 0) {
-					this.deviceExpect[dctl.key] = { on: level > 0, until: Date.now() + this.cfg.commandSettleMs };
+					this.deviceExpect[dctl.key] = {
+						on: target > 0,
+						until: Date.now() + this.cfg.commandSettleMs,
+						restore,
+					};
+					if (this.deviceSettleTimers[dctl.key]) {
+						this.clearTimeout(this.deviceSettleTimers[dctl.key]);
+					}
+					this.deviceSettleTimers[dctl.key] = this.setTimeout(
+						() => this.onSettleTimeout(dctl.key),
+						this.cfg.commandSettleMs,
+					);
 				}
 				this.log.debug(
-					`Device ${dctl.key} ${dctl.leaf}=${state.val} -> recall scene ${sceneId} (awaiting confirm)`,
+					`Device ${dctl.key} ${dctl.leaf}=${state.val} -> recall scene ${sceneId} levels [${levels.join(',')}] (awaiting confirm)`,
 				);
 			}
 			return;
@@ -1112,6 +1206,10 @@ class CasambiLithernet extends utils.Adapter {
 				this.clearTimeout(timer);
 			}
 			this.deviceReadbackTimers = {};
+			for (const timer of Object.values(this.deviceSettleTimers)) {
+				this.clearTimeout(timer);
+			}
+			this.deviceSettleTimers = {};
 			this.deviceExpect = {};
 			if (this.broker) {
 				await this.broker.stop();

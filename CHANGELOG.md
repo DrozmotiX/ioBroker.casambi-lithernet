@@ -6,6 +6,20 @@ All notable changes to this adapter are documented here.
 	Placeholder for the next version (at the beginning of the line):
 	## **WORK IN PROGRESS**
 -->
+## 0.6.12-beta.2 (2026-06-26) - Reliable per-device off + state always synced to the device
+
+Fixes the "switch a lamp on with a button, off with the adapter → lamp stays on, and we show it as off" case. Two causes, both fixed: (1) our control "off" recalled the device's scene at level 0, which the gateway treats as *deactivate that scene* — so if a button's scene was active the lamp fell back to it and stayed on; (2) because the lamp didn't change, passive mode reported nothing, so our `on=false` was never corrected. Now the off uses **override-then-zero** (grab the load onto its control scene at its current level, then set 0) so it wins over a foreign scene, and a **settle timeout** restores the last gateway-confirmed value if any command produces no readback — so our state can never be left showing a value the device never reached.
+
+* (DutchmanNL) Fix: per-device **off now overrides an active foreign scene** (e.g. a wall button's scene) instead of falling back to it. The off recalls the control scene at the load's current level then 0 ("override-then-zero", verified live); a non-zero on/dim already overrides, so it's unchanged
+* (DutchmanNL) Fix: if a command gets **no confirming readback** within the settle window (it had no physical effect, so passive mode stays silent), the load's last gateway-confirmed `on`/`level` is **restored** — the device state always reflects reality, never an assumed value
+* (DutchmanNL) `offGrabDelayMs` (default 300 ms) spacing for the override-then-zero recall
+
+```detail
+- lib/casambi.js: new pure `planDeviceLevels(target, current)` -> recall sequence ([current,0] for off-while-on, else [target]); unit-tested
+- main.js: device-control publishes the planned sequence (grab spaced by offGrabDelayMs); `deviceExpect[key].restore` snapshots pre-command on/level; `deviceSettleTimers` + `onSettleTimeout` restore it if unconfirmed; timers cleared on confirm, unload, cloud rebuild
+- builds on 0.6.12-beta.1 (settle window / flip suppression), unchanged
+```
+
 ## 0.6.12-beta.1 (2026-06-26) - Command settle window (completes the on/off flip fix)
 
 Completes the on/off flip fix. The 0.6.12-beta.0 debounce alone wasn't enough: the gateway re-polls every load continuously, so a **routine poll reports the still-old level ~0.5–1 s after a recall**, before the physical change — and that pre-change reading was written, re-introducing the flip. A per-device **command settle window** now ignores readbacks that still contradict the commanded on/off until the gateway reflects it; if the window elapses (command lost / didn't take), the true state is accepted — so a failed switch reverts to its real value instead of showing an assumed one.
