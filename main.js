@@ -125,6 +125,13 @@ class CasambiLithernet extends utils.Adapter {
 		this.deviceReadback = {}; // key -> { level?, on? } pending sample
 		this.deviceReadbackTimers = {}; // key -> debounce timer
 		this.deviceConfirmed = {}; // key -> { level?, on? } last confirmed (ack:true) value
+		// Per-device command settle window. The gateway re-polls every device continuously, so right
+		// after a command a ROUTINE poll reports the load's still-OLD level (~0.5-1s before the
+		// physical change lands) - written verbatim that produced the on/off flip. While a command is
+		// in flight we ignore readbacks that still contradict the commanded on/off, until the gateway
+		// reflects it OR the window elapses (then reality wins, so a failed/lost command self-corrects
+		// to its true state instead of showing an assumed value). key -> { on, until }.
+		this.deviceExpect = {};
 
 		this.on('ready', this.onReady.bind(this));
 		this.on('stateChange', this.onStateChange.bind(this));
@@ -156,6 +163,11 @@ class CasambiLithernet extends utils.Adapter {
 			// value is written. Must comfortably exceed the gateway's stale->fresh pair gap (~10ms);
 			// kept small so confirmed state is still near-instant. 0 disables (write each sample).
 			readbackDebounceMs: Math.max(0, Number(this.config.readbackDebounceMs) || 300),
+			// Window (ms) after a device command during which readbacks still contradicting the
+			// commanded on/off are ignored (the gateway needs ~1s to reflect a recall). Must exceed
+			// the typical recall->readback latency; when it elapses, reality is accepted so a failed
+			// command reverts to the true state. 0 disables the settle filter.
+			commandSettleMs: Math.max(0, Number(this.config.commandSettleMs) || 2500),
 		};
 
 		// Friendly channel names from the "Names" config tab (index -> name).
@@ -353,6 +365,7 @@ class CasambiLithernet extends utils.Adapter {
 		this.deviceReadbackTimers = {};
 		this.deviceReadback = {};
 		this.deviceConfirmed = {};
+		this.deviceExpect = {};
 		const builtKeys = new Set();
 		const sceneName = {};
 		for (const s of parsed.scenes) {
@@ -752,6 +765,12 @@ class CasambiLithernet extends utils.Adapter {
 	 * CONFIRMED value, each with ack:true (confirmed from real gateway data, never assumed). A
 	 * command invalidates deviceConfirmed[key] so the next feedback re-confirms even if unchanged.
 	 *
+	 * While a command is in flight (deviceExpect[key]), a readback that still contradicts the
+	 * commanded on/off is DROPPED - the gateway re-polls the load at its pre-change level for ~1s
+	 * after a recall, and writing that produced the on/off flip. Once the gateway reflects the
+	 * command (or the settle window elapses) the value is accepted; after the window, reality wins
+	 * so a failed/lost command reverts to the true state rather than showing an assumed value.
+	 *
 	 * @param {string} key - device key (BLE address)
 	 * @returns {void}
 	 */
@@ -761,6 +780,10 @@ class CasambiLithernet extends utils.Adapter {
 		if (!pending) {
 			return;
 		}
+		if (casambi.settleReadback(pending, this.deviceExpect[key], Date.now()) === 'drop') {
+			return; // still contradicts the in-flight command - keep waiting (pre-change re-poll)
+		}
+		delete this.deviceExpect[key]; // command reflected, or window elapsed -> stop filtering
 		const changed = casambi.diffConfirmedReadback(pending, this.deviceConfirmed[key]);
 		const confirmed = this.deviceConfirmed[key] || (this.deviceConfirmed[key] = {});
 		for (const [field, val] of Object.entries(changed)) {
@@ -1016,9 +1039,14 @@ class CasambiLithernet extends utils.Adapter {
 				this.broker.publish(command.topic, command.payload);
 				// Do NOT optimistically ack: the requested value already shows (the user's own
 				// ack:false write), and the gateway's poll_device readback confirms it (ack:true)
-				// within ~1-2s. Invalidate the confirmed snapshot so that next readback re-stamps
-				// ack:true even if the value is unchanged (e.g. commanding a load already in state).
+				// within ~1-2s. Invalidate the confirmed snapshot so the next readback re-stamps
+				// ack:true even if the value is unchanged (e.g. commanding a load already in state),
+				// and open the settle window so the gateway's pre-change re-polls are ignored until
+				// it reflects the command (see flushDeviceReadback).
 				delete this.deviceConfirmed[dctl.key];
+				if (this.cfg.commandSettleMs > 0) {
+					this.deviceExpect[dctl.key] = { on: level > 0, until: Date.now() + this.cfg.commandSettleMs };
+				}
 				this.log.debug(
 					`Device ${dctl.key} ${dctl.leaf}=${state.val} -> recall scene ${sceneId} (awaiting confirm)`,
 				);
@@ -1084,6 +1112,7 @@ class CasambiLithernet extends utils.Adapter {
 				this.clearTimeout(timer);
 			}
 			this.deviceReadbackTimers = {};
+			this.deviceExpect = {};
 			if (this.broker) {
 				await this.broker.stop();
 				this.broker = null;
