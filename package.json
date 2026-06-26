@@ -1,6 +1,6 @@
 {
   "name": "iobroker.casambi-lithernet",
-  "version": "0.6.12-beta.1",
+  "version": "0.6.12-beta.2",
   "description": "ioBroker Lithernet – Casambi allows communication by MQTT protocol with Lithernet–Casambi gateway enabling Ethernet-based integration of the Casambi Bluetooth system into the ioBroker environment. The gateway connects to the local network via Ethernet and communicates with Casambi devices over Bluetooth, allowing for control and monitoring of Casambi-enabled lighting systems through the ioBroker platform.",
   "author": {
     "name": "DutchmanNL",

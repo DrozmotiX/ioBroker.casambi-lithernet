@@ -1,8 +1,12 @@
 {
 	"common": {
 		"name": "casambi-lithernet",
-		"version": "0.6.12-beta.1",
+		"version": "0.6.12-beta.2",
 		"news": {
+			"0.6.12-beta.2": {
+				"en": "Fix: turning a lamp off from the adapter now works even when a button's scene is active (override-then-zero), and the device state always reflects the real value - if a command produces no readback, the last gateway-confirmed on/level is restored instead of leaving an assumed value.",
+				"de": "Fix: Das Ausschalten einer Leuchte ueber den Adapter funktioniert jetzt auch, wenn eine Tasten-Szene aktiv ist (Override-dann-Null), und der Geraetezustand spiegelt immer den echten Wert wider - liefert ein Befehl keine Rueckmeldung, wird der zuletzt vom Gateway bestaetigte on/level wiederhergestellt statt einen angenommenen Wert zu zeigen."
+			},
 			"0.6.12-beta.1": {
 				"en": "Fix: completes the on/off flip fix. A per-device command settle window now ignores the gateway's pre-change re-polls (which report the old level ~1s after a recall) until the command is reflected; if it never takes effect, the true state is accepted so a failed switch reverts instead of showing an assumed value.",
 				"de": "Fix: vervollstaendigt die Behebung des Ein/Aus-Flackerns. Ein Befehls-Wartefenster pro Geraet ignoriert jetzt die Vorab-Abfragen des Gateways (die ~1s nach einem Aufruf noch den alten Wert melden), bis der Befehl wirksam wird; bleibt er aus, wird der echte Zustand uebernommen, sodass ein fehlgeschlagener Schaltbefehl zurueckspringt statt einen angenommenen Wert zu zeigen."
