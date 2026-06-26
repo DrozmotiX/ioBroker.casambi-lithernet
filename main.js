@@ -116,6 +116,15 @@ class CasambiLithernet extends utils.Adapter {
 		// Last parsed+range-filtered cloud model, cached so a control-scene pick (controlSceneSelect)
 		// can be applied live against the current catalog without a fresh cloud fetch.
 		this.lastParsed = null;
+		// Per-device readback debounce. The gateway emits a STALE-then-fresh level pair (~10ms
+		// apart) on every scene recall, which - written verbatim - made devices.<key>.on flip
+		// old->new in the UI. So device level/on readbacks are coalesced over a short window and
+		// only the settled value is written, with ack:true (CONFIRMED from gateway data, never
+		// assumed). deviceConfirmed = last value written per key; invalidated on a command so the
+		// next real feedback re-confirms even if unchanged.
+		this.deviceReadback = {}; // key -> { level?, on? } pending sample
+		this.deviceReadbackTimers = {}; // key -> debounce timer
+		this.deviceConfirmed = {}; // key -> { level?, on? } last confirmed (ack:true) value
 
 		this.on('ready', this.onReady.bind(this));
 		this.on('stateChange', this.onStateChange.bind(this));
@@ -143,6 +152,10 @@ class CasambiLithernet extends utils.Adapter {
 			gatewayId,
 			defaultDuration: Number(this.config.defaultDuration) || 0,
 			levelScale: this.config.levelScale === 'raw' ? 'raw' : 'percent',
+			// Window (ms) over which per-device level/on readbacks are coalesced before the settled
+			// value is written. Must comfortably exceed the gateway's stale->fresh pair gap (~10ms);
+			// kept small so confirmed state is still near-instant. 0 disables (write each sample).
+			readbackDebounceMs: Math.max(0, Number(this.config.readbackDebounceMs) || 300),
 		};
 
 		// Friendly channel names from the "Names" config tab (index -> name).
@@ -332,6 +345,14 @@ class CasambiLithernet extends utils.Adapter {
 		this.deviceControlScene = {};
 		this.deviceIdToKey = {};
 		this.cloudScenes = new Set();
+		// Device keys may change on a (re)build; drop any in-flight readback debounce state so it
+		// can't write a stale value against the new tree, and re-confirm fresh from feedback.
+		for (const timer of Object.values(this.deviceReadbackTimers)) {
+			this.clearTimeout(timer);
+		}
+		this.deviceReadbackTimers = {};
+		this.deviceReadback = {};
+		this.deviceConfirmed = {};
 		const builtKeys = new Set();
 		const sceneName = {};
 		for (const s of parsed.scenes) {
@@ -655,13 +676,19 @@ class CasambiLithernet extends utils.Adapter {
 				// reset a controllable device's `on` back to read-only the first time it reports a live
 				// value. So update their VALUES via setState (no common touched) and keep them out of
 				// the jsonExplorer tree; only the dynamic read-only fields (health/colour) go through it.
+				// Coalesced over readbackDebounceMs to drop the gateway's stale->fresh pair (see
+				// queueDeviceReadback); the settled value is written as CONFIRMED (ack:true).
+				const sample = {};
 				if (node.level !== undefined) {
-					await this.setStateChangedAsync(`devices.${key}.level`, { val: node.level, ack: true });
+					sample.level = node.level;
 					delete node.level;
 				}
 				if (node.on !== undefined) {
-					await this.setStateChangedAsync(`devices.${key}.on`, { val: node.on, ack: true });
+					sample.on = node.on;
 					delete node.on;
+				}
+				if (sample.level !== undefined || sample.on !== undefined) {
+					this.queueDeviceReadback(key, sample);
 				}
 				if (Object.keys(node).length) {
 					devs[key] = node;
@@ -690,6 +717,55 @@ class CasambiLithernet extends utils.Adapter {
 		}
 		if (Object.keys(out).length) {
 			await jsonExplorer.traverseJson(out, '', false, false, 0);
+		}
+	}
+
+	/**
+	 * Queue a per-device level/on readback sample and (re)arm its debounce timer. Only the LAST
+	 * sample in a burst is written (the gateway's stale-then-fresh recall pair collapses to the
+	 * fresh value), so the UI no longer flips old->new on a switch. With the window at 0 the value
+	 * is flushed immediately (legacy behaviour).
+	 *
+	 * @param {string} key - device key (BLE address)
+	 * @param {{level?: number, on?: boolean}} sample - latest readback fields
+	 * @returns {void}
+	 */
+	queueDeviceReadback(key, sample) {
+		const pending = this.deviceReadback[key] || (this.deviceReadback[key] = {});
+		Object.assign(pending, sample);
+		const ms = this.cfg.readbackDebounceMs;
+		if (!ms) {
+			this.flushDeviceReadback(key);
+			return;
+		}
+		if (this.deviceReadbackTimers[key]) {
+			this.clearTimeout(this.deviceReadbackTimers[key]);
+		}
+		this.deviceReadbackTimers[key] = this.setTimeout(() => {
+			delete this.deviceReadbackTimers[key];
+			this.flushDeviceReadback(key);
+		}, ms);
+	}
+
+	/**
+	 * Flush a device's settled readback: write only the level/on fields that differ from the last
+	 * CONFIRMED value, each with ack:true (confirmed from real gateway data, never assumed). A
+	 * command invalidates deviceConfirmed[key] so the next feedback re-confirms even if unchanged.
+	 *
+	 * @param {string} key - device key (BLE address)
+	 * @returns {void}
+	 */
+	flushDeviceReadback(key) {
+		const pending = this.deviceReadback[key];
+		delete this.deviceReadback[key];
+		if (!pending) {
+			return;
+		}
+		const changed = casambi.diffConfirmedReadback(pending, this.deviceConfirmed[key]);
+		const confirmed = this.deviceConfirmed[key] || (this.deviceConfirmed[key] = {});
+		for (const [field, val] of Object.entries(changed)) {
+			confirmed[field] = val;
+			this.setState(`devices.${key}.${field}`, { val, ack: true });
 		}
 	}
 
@@ -938,8 +1014,14 @@ class CasambiLithernet extends utils.Adapter {
 			const command = casambi.buildCommand({ channel: 'scenes', index: sceneId, leaf: 'level' }, level, this.cfg);
 			if (command) {
 				this.broker.publish(command.topic, command.payload);
-				this.setState(id, { val: state.val, ack: true });
-				this.log.debug(`Device ${dctl.key} ${dctl.leaf}=${state.val} -> recall scene ${sceneId}`);
+				// Do NOT optimistically ack: the requested value already shows (the user's own
+				// ack:false write), and the gateway's poll_device readback confirms it (ack:true)
+				// within ~1-2s. Invalidate the confirmed snapshot so that next readback re-stamps
+				// ack:true even if the value is unchanged (e.g. commanding a load already in state).
+				delete this.deviceConfirmed[dctl.key];
+				this.log.debug(
+					`Device ${dctl.key} ${dctl.leaf}=${state.val} -> recall scene ${sceneId} (awaiting confirm)`,
+				);
 			}
 			return;
 		}
@@ -953,8 +1035,13 @@ class CasambiLithernet extends utils.Adapter {
 			return;
 		}
 		this.broker.publish(command.topic, command.payload);
-		// Optimistically acknowledge; the gateway also reports the actual value via get/*.
-		this.setState(id, { val: state.val, ack: true });
+		// Ack only where the gateway gives no readback to confirm with: injected sensors and the
+		// momentary virtual buttons have no get/* feedback, so they must self-ack. Controllable
+		// channels (broadcast/scenes/groups) are confirmed by their poll_* feedback instead, so we
+		// leave them ack:false until that lands - never assume the value took effect.
+		if (parts.channel === 'sensors' || parts.channel === 'buttons') {
+			this.setState(id, { val: state.val, ack: true });
+		}
 	}
 
 	/**
@@ -993,6 +1080,10 @@ class CasambiLithernet extends utils.Adapter {
 				this.clearInterval(this.syncTimer);
 				this.syncTimer = undefined;
 			}
+			for (const timer of Object.values(this.deviceReadbackTimers)) {
+				this.clearTimeout(timer);
+			}
+			this.deviceReadbackTimers = {};
 			if (this.broker) {
 				await this.broker.stop();
 				this.broker = null;

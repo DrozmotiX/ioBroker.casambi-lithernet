@@ -1,8 +1,12 @@
 {
 	"common": {
 		"name": "casambi-lithernet",
-		"version": "0.6.11",
+		"version": "0.6.12-beta.0",
 		"news": {
+			"0.6.12-beta.0": {
+				"en": "Fix: switching a light no longer briefly shows the old on/off value before the new one. The gateway emits a stale-then-fresh level pair on every scene recall; device level/on are now coalesced over a short window and acked only from confirmed gateway readback, never optimistically assumed.",
+				"de": "Fix: Beim Schalten eines Lichts wird nicht mehr kurz der alte Ein/Aus-Wert vor dem neuen angezeigt. Das Gateway sendet bei jedem Szenenaufruf ein altes-dann-neues Level-Paar; Gerät level/on werden jetzt ueber ein kurzes Fenster zusammengefasst und nur aus bestaetigtem Gateway-Readback quittiert, nie optimistisch angenommen."
+			},
 			"0.6.11": {
 				"en": "Docs: how to find your short Network UUID (not the app's 128-bit iBeacon UUID, which makes the cloud sync 404). Ship the read-only getinfo.py in the casambi-bt playground — it connects over Bluetooth with your network password and prints the UUID + network structure, no lights touched.",
 				"de": "Doku: wie man die kurze Netzwerk-UUID findet (nicht die 128-Bit-iBeacon-UUID der App, die zum 404 bei der Cloud-Synchronisierung führt). Das schreibgeschützte getinfo.py im casambi-bt-Playground wird mitgeliefert — es verbindet sich per Bluetooth mit dem Netzwerkpasswort und gibt die UUID + Netzwerkstruktur aus, ohne Lichter zu verändern."
