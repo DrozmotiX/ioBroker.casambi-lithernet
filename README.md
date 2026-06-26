@@ -74,7 +74,7 @@ mesh-confirmed state** (`ack:true`), and on/off is **absolute** (no toggle). See
 |---|---|
 | [Setup & prerequisites](docs/setup.md) | Install, broker, gateway, polling mode, cloud credentials |
 | [Data sources & live state](docs/data-sources.md) | Cloud catalog vs MQTT live vs developer API — who provides what |
-| [Control & state synchronisation](docs/control-and-state.md) | How switching works (scene recall + mesh readback) and per-device control setup |
+| [Control & state synchronisation](docs/control-and-state.md) | How switching works (scene recall + mesh readback), per-device control setup, and the **Casambi network setup convention** (scenes/switches/buttons) |
 | [Object & state reference](docs/objects.md) | Every state: role, direction and MQTT topic |
 | [Troubleshooting](docs/troubleshooting.md) | Common issues and limitations |
 
