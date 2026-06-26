@@ -6,6 +6,13 @@ All notable changes to this adapter are documented here.
 	Placeholder for the next version (at the beginning of the line):
 	## **WORK IN PROGRESS**
 -->
+## 0.7.0 (2026-06-26) - Stable: correct, always-synced device on/off
+
+First stable release of the on/off-correctness work that landed across the `0.6.12-beta.*` series, validated live on a customer gateway: no on/off **flip** on a switch, **confirmed-only** state that always reflects the device (never an assumed value), a per-device **off that wins over a foreign/button scene**, and correct on/off for **relay/switch units** (which signal state via the active scene, not `level`). Also documents the **Casambi network setup convention**.
+
+* (DutchmanNL) Consolidates the beta fixes into a stable release: readback debounce + command settle window (no flip), confirmed-only ack with restore-on-timeout (state always matches the device), override-then-zero off (beats an active foreign scene), and `on = level > 0 || scene > 0` (relay/switch support)
+* (DutchmanNL) Docs: new **Casambi network setup convention** — one single-member control scene per device, switches are scene-only (one scene each, never toggled directly), everything else (groups/scenes/schedules/automations) belongs in Oikos; physical multi-device buttons are the documented exception
+
 ## 0.6.12-beta.3 (2026-06-26) - Correct on/off for relay/switch units (not just dimmers)
 
 A relay/switch (e.g. SWITCH-102) keeps its `level` at 0 and signals on/off only through the scene it follows, so the old `on = level > 0` left such devices stuck reading off. Verified live: toggling the switch flips its `scene` field `0 ↔ 103` while `level` stays 0. `on` is now derived from level **or** an active scene, so switches track correctly and dimmers are unchanged.

@@ -34,6 +34,12 @@
 To make individual luminaires controllable, continue with
 [per-device control setup](control-and-state.md#setting-up-per-device-control).
 
+> **Network convention:** build only the minimal scenes in Casambi (one single-member control
+> scene per device, plus what physical multi-device buttons need) and keep groups, scenes,
+> schedules and automations in Oikos. **Switches/relays are scene-only — one control scene each,
+> never toggled directly** (a direct relay toggle is invisible over MQTT). See
+> [Casambi network setup convention](control-and-state.md#casambi-network-setup-convention-scenes-switches--buttons).
+
 ## Finding your Network UUID
 
 The adapter needs the **short network UUID** — a 12-character hex id like `ef3de41cf5d3`. This is

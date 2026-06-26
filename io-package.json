@@ -1,8 +1,12 @@
 {
 	"common": {
 		"name": "casambi-lithernet",
-		"version": "0.6.12-beta.3",
+		"version": "0.7.0",
 		"news": {
+			"0.7.0": {
+				"en": "Stable release of the on/off-correctness work: no flip when switching, confirmed-only state that always reflects the device (with restore-on-timeout), a per-device off that wins over an active foreign/button scene, and correct on/off for relay/switch units (state via the active scene, not level). Documents the Casambi network setup convention.",
+				"de": "Stabiles Release der Ein/Aus-Korrektheit: kein Flackern beim Schalten, ausschliesslich bestaetigter Zustand, der immer das Geraet widerspiegelt (mit Wiederherstellung bei Zeitueberschreitung), ein geraetebezogenes Aus, das sich gegen eine aktive Fremd-/Tasten-Szene durchsetzt, und korrektes Ein/Aus fuer Relais-/Schalter-Geraete (Zustand ueber die aktive Szene, nicht level). Dokumentiert die Casambi-Netzwerk-Einrichtungskonvention."
+			},
 			"0.6.12-beta.3": {
 				"en": "Fix: relay/switch units now show on/off correctly. They keep level at 0 and signal state only through the scene they follow, so on is now derived from level OR an active scene (on = level>0 or scene>0). Dimmers are unchanged.",
 				"de": "Fix: Relais-/Schalter-Geraete zeigen Ein/Aus jetzt korrekt an. Sie halten level auf 0 und signalisieren den Zustand nur ueber die Szene, der sie folgen; on wird daher jetzt aus level ODER einer aktiven Szene abgeleitet (on = level>0 oder scene>0). Dimmer bleiben unveraendert."

@@ -66,3 +66,41 @@ that device.
 
 > A control scene **must be single-member** so a write only affects that one device. The adapter
 > only offers single-member scenes as candidates for exactly this reason.
+
+## Casambi network setup convention (scenes, switches & buttons)
+
+To integrate cleanly, **keep the Casambi network minimal and put grouping, multi-device scenes,
+mood scenes, schedules and automation logic in Oikos/ioBroker** — Oikos then drives each Casambi
+device through its own control scene. Overlapping Casambi scenes are what cause the awkward cases
+(a foreign scene "winning", an off not taking, or a device's state going stale), so the less the
+Casambi network decides on its own, the better.
+
+Two things **must** still live in Casambi:
+
+1. **One single-member control scene per controllable device** — this is mandatory, it is the only
+   way the gateway lets the adapter control or read a single unit (no per-unit set topic). See
+   [Setting up per-device control](#setting-up-per-device-control).
+2. **The minimum scenes a physical multi-device button needs.** A wall button has to be bound to
+   something Casambi-side, and the adapter cannot yet read raw button presses over MQTT, so a button
+   that switches several luminaires still needs a multi-device Casambi scene. The adapter *handles*
+   these overlaps (it grabs a load onto its own control scene before switching it off, and derives
+   on/off from the active scene), but keep them to the minimum.
+
+### Switches / relays — scene-only, one scene
+
+A **relay/switch unit behaves differently from a dimmer**. It keeps `level` at **0** and signals
+its state **only through the scene it follows** — so `on` is derived as **`level > 0` OR an active
+scene** (`scene > 0`). Consequences for setup:
+
+- **Drive a switch only via its single control scene — never by toggling the unit directly.** A
+  *direct* relay toggle is **invisible over MQTT** in passive mode (the gateway reports `scene=0,
+  level=0` whether the relay is on or off); only a *scene-driven* change is observable.
+- **Assign a switch to exactly one single-member control scene.** With one scene, `scene = N` means
+  on and `scene = 0` (deactivated) means off — unambiguous. The case that would *break* this is a
+  switch that is a **member of a scene which turns it off**: recalling that scene makes the unit
+  follow it (`scene > 0`) while it is physically off, so it would be mis-read as on. One control
+  scene plus "off = scene deactivation" avoids that entirely.
+
+> **Rule of thumb:** in Casambi build only (a) one single-member control scene per device and
+> (b) the minimum scenes physical multi-device buttons require. Everything else — groups, scenes,
+> schedules, automations — belongs in Oikos. Switches are scene-only, one scene each.
