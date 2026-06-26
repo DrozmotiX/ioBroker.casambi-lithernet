@@ -6,6 +6,17 @@ All notable changes to this adapter are documented here.
 	Placeholder for the next version (at the beginning of the line):
 	## **WORK IN PROGRESS**
 -->
+## 0.6.12-beta.3 (2026-06-26) - Correct on/off for relay/switch units (not just dimmers)
+
+A relay/switch (e.g. SWITCH-102) keeps its `level` at 0 and signals on/off only through the scene it follows, so the old `on = level > 0` left such devices stuck reading off. Verified live: toggling the switch flips its `scene` field `0 ↔ 103` while `level` stays 0. `on` is now derived from level **or** an active scene, so switches track correctly and dimmers are unchanged.
+
+* (DutchmanNL) Fix: device `on` is now `level > 0 || scene > 0` — a relay/switch that reports `level 0` but follows a scene (`scene` non-zero) is correctly shown as **on**; a manually-dimmed lamp (scene 0, level up) and all dimmer cases are unchanged
+
+```detail
+- lib/casambi.js parseGet: on-derivation for poll_device values now unions level and the active-scene signal; unit test covers relay (level 0 + scene), dimmer-via-scene, dimmer-by-hand, and off
+- Not addressed here: a relay turning OFF while a foreign scene is active (override-then-zero grab is skipped at level 0) — separate follow-up
+```
+
 ## 0.6.12-beta.2 (2026-06-26) - Reliable per-device off + state always synced to the device
 
 Fixes the "switch a lamp on with a button, off with the adapter → lamp stays on, and we show it as off" case. Two causes, both fixed: (1) our control "off" recalled the device's scene at level 0, which the gateway treats as *deactivate that scene* — so if a button's scene was active the lamp fell back to it and stayed on; (2) because the lamp didn't change, passive mode reported nothing, so our `on=false` was never corrected. Now the off uses **override-then-zero** (grab the load onto its control scene at its current level, then set 0) so it wins over a foreign scene, and a **settle timeout** restores the last gateway-confirmed value if any command produces no readback — so our state can never be left showing a value the device never reached.

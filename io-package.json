@@ -1,8 +1,12 @@
 {
 	"common": {
 		"name": "casambi-lithernet",
-		"version": "0.6.12-beta.2",
+		"version": "0.6.12-beta.3",
 		"news": {
+			"0.6.12-beta.3": {
+				"en": "Fix: relay/switch units now show on/off correctly. They keep level at 0 and signal state only through the scene they follow, so on is now derived from level OR an active scene (on = level>0 or scene>0). Dimmers are unchanged.",
+				"de": "Fix: Relais-/Schalter-Geraete zeigen Ein/Aus jetzt korrekt an. Sie halten level auf 0 und signalisieren den Zustand nur ueber die Szene, der sie folgen; on wird daher jetzt aus level ODER einer aktiven Szene abgeleitet (on = level>0 oder scene>0). Dimmer bleiben unveraendert."
+			},
 			"0.6.12-beta.2": {
 				"en": "Fix: turning a lamp off from the adapter now works even when a button's scene is active (override-then-zero), and the device state always reflects the real value - if a command produces no readback, the last gateway-confirmed on/level is restored instead of leaving an assumed value.",
 				"de": "Fix: Das Ausschalten einer Leuchte ueber den Adapter funktioniert jetzt auch, wenn eine Tasten-Szene aktiv ist (Override-dann-Null), und der Geraetezustand spiegelt immer den echten Wert wider - liefert ein Befehl keine Rueckmeldung, wird der zuletzt vom Gateway bestaetigte on/level wiederhergestellt statt einen angenommenen Wert zu zeigen."
