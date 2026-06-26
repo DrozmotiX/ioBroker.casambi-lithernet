@@ -1,269 +1,170 @@
 {
-	"common": {
-		"name": "casambi-lithernet",
-		"version": "0.7.0",
-		"news": {
-			"0.7.0": {
-				"en": "Stable release of the on/off-correctness work: no flip when switching, confirmed-only state that always reflects the device (with restore-on-timeout), a per-device off that wins over an active foreign/button scene, and correct on/off for relay/switch units (state via the active scene, not level). Documents the Casambi network setup convention.",
-				"de": "Stabiles Release der Ein/Aus-Korrektheit: kein Flackern beim Schalten, ausschliesslich bestaetigter Zustand, der immer das Geraet widerspiegelt (mit Wiederherstellung bei Zeitueberschreitung), ein geraetebezogenes Aus, das sich gegen eine aktive Fremd-/Tasten-Szene durchsetzt, und korrektes Ein/Aus fuer Relais-/Schalter-Geraete (Zustand ueber die aktive Szene, nicht level). Dokumentiert die Casambi-Netzwerk-Einrichtungskonvention."
-			},
-			"0.6.12-beta.3": {
-				"en": "Fix: relay/switch units now show on/off correctly. They keep level at 0 and signal state only through the scene they follow, so on is now derived from level OR an active scene (on = level>0 or scene>0). Dimmers are unchanged.",
-				"de": "Fix: Relais-/Schalter-Geraete zeigen Ein/Aus jetzt korrekt an. Sie halten level auf 0 und signalisieren den Zustand nur ueber die Szene, der sie folgen; on wird daher jetzt aus level ODER einer aktiven Szene abgeleitet (on = level>0 oder scene>0). Dimmer bleiben unveraendert."
-			},
-			"0.6.12-beta.2": {
-				"en": "Fix: turning a lamp off from the adapter now works even when a button's scene is active (override-then-zero), and the device state always reflects the real value - if a command produces no readback, the last gateway-confirmed on/level is restored instead of leaving an assumed value.",
-				"de": "Fix: Das Ausschalten einer Leuchte ueber den Adapter funktioniert jetzt auch, wenn eine Tasten-Szene aktiv ist (Override-dann-Null), und der Geraetezustand spiegelt immer den echten Wert wider - liefert ein Befehl keine Rueckmeldung, wird der zuletzt vom Gateway bestaetigte on/level wiederhergestellt statt einen angenommenen Wert zu zeigen."
-			},
-			"0.6.12-beta.1": {
-				"en": "Fix: completes the on/off flip fix. A per-device command settle window now ignores the gateway's pre-change re-polls (which report the old level ~1s after a recall) until the command is reflected; if it never takes effect, the true state is accepted so a failed switch reverts instead of showing an assumed value.",
-				"de": "Fix: vervollstaendigt die Behebung des Ein/Aus-Flackerns. Ein Befehls-Wartefenster pro Geraet ignoriert jetzt die Vorab-Abfragen des Gateways (die ~1s nach einem Aufruf noch den alten Wert melden), bis der Befehl wirksam wird; bleibt er aus, wird der echte Zustand uebernommen, sodass ein fehlgeschlagener Schaltbefehl zurueckspringt statt einen angenommenen Wert zu zeigen."
-			},
-			"0.6.12-beta.0": {
-				"en": "Fix: switching a light no longer briefly shows the old on/off value before the new one. The gateway emits a stale-then-fresh level pair on every scene recall; device level/on are now coalesced over a short window and acked only from confirmed gateway readback, never optimistically assumed.",
-				"de": "Fix: Beim Schalten eines Lichts wird nicht mehr kurz der alte Ein/Aus-Wert vor dem neuen angezeigt. Das Gateway sendet bei jedem Szenenaufruf ein altes-dann-neues Level-Paar; Gerät level/on werden jetzt ueber ein kurzes Fenster zusammengefasst und nur aus bestaetigtem Gateway-Readback quittiert, nie optimistisch angenommen."
-			},
-			"0.6.11": {
-				"en": "Docs: how to find your short Network UUID (not the app's 128-bit iBeacon UUID, which makes the cloud sync 404). Ship the read-only getinfo.py in the casambi-bt playground — it connects over Bluetooth with your network password and prints the UUID + network structure, no lights touched.",
-				"de": "Doku: wie man die kurze Netzwerk-UUID findet (nicht die 128-Bit-iBeacon-UUID der App, die zum 404 bei der Cloud-Synchronisierung führt). Das schreibgeschützte getinfo.py im casambi-bt-Playground wird mitgeliefert — es verbindet sich per Bluetooth mit dem Netzwerkpasswort und gibt die UUID + Netzwerkstruktur aus, ohne Lichter zu verändern."
-			},
-			"0.6.10": {
-				"en": "Docs: moved the changelog out of the README into a dedicated CHANGELOG.md, and added a short 'Control types & impact' overview to the README (whole-network / group / scene / single-device control and what each affects). No functional change.",
-				"de": "Doku: Changelog aus der README in eine eigene CHANGELOG.md ausgelagert und der README eine kurze Übersicht 'Steuerungsarten & Auswirkung' hinzugefügt (Gesamtnetz-/Gruppen-/Szenen-/Einzelgerätesteuerung und was jeweils betroffen ist). Keine funktionale Änderung."
-			},
-			"0.6.9": {
-				"en": "Docs: restructured the README into a short overview + quick start + a documentation index, with the detailed guides moved into separate files under docs/ (setup, data sources, control & state synchronisation, object reference, troubleshooting). Easier to scan; no functional change.",
-				"de": "Doku: README in eine kurze Übersicht + Schnellstart + ein Dokumentationsverzeichnis umstrukturiert; die ausführlichen Anleitungen wurden in separate Dateien unter docs/ verschoben (Einrichtung, Datenquellen, Steuerung & Statussynchronisierung, Objektreferenz, Fehlerbehebung). Übersichtlicher; keine funktionale Änderung."
-			},
-			"0.6.8": {
-				"en": "Fix: a button/dimmer module no longer explodes the object tree. The gateway sends element_* sub-topics (poll_device/<n>/element_button|pushbutton|slider|onoff|dimmer) for those modules; parseGet was flattening every field into a raw state (button_1..8, dimmer_1..4, ...). It now only flattens values/propertys; the element_* families are sampled (logged once) for proper button/dimmer mapping later, and existing leaked element_* states are cleaned up on sync.",
-				"de": "Fix: ein Tasten-/Dimmer-Modul lässt den Objektbaum nicht mehr explodieren. Das Gateway sendet element_*-Untertopics (poll_device/<n>/element_button|pushbutton|slider|onoff|dimmer) für diese Module; parseGet hat jedes Feld in einen rohen State umgewandelt (button_1..8, dimmer_1..4, ...). Es werden jetzt nur noch values/propertys übernommen; die element_*-Familien werden protokolliert (einmalig) für eine spätere saubere Tasten-/Dimmer-Zuordnung, und vorhandene element_*-States werden beim Sync entfernt."
-			},
-			"0.6.7": {
-				"en": "Docs: new 'Control & state synchronisation' section (control = scene recall ack:false; confirmation = real MQTT device readback ack:true, mesh-measured, pushed directly in passive mode ~0.4-1.5s), so state is correct no matter how the light was changed (app/wall/KNX/scene) and absolute on/off always works. Plus a 'Per-device control: setup' how-to (one single-member scene per device + assignment) and a Troubleshooting section; Setup now recommends passive polling.",
-				"de": "Doku: neuer Abschnitt 'Steuerung & Statussynchronisierung' (Steuerung = Szenenaufruf ack:false; Bestätigung = echte MQTT-Geräte-Rückmeldung ack:true, am Mesh gemessen, im Passivmodus direkt gepusht ~0,4-1,5s), daher ist der Status korrekt, egal wie das Licht geändert wurde (App/Wandschalter/KNX/Szene), und absolutes Ein/Aus funktioniert immer. Zusätzlich eine Anleitung 'Gerätesteuerung: Einrichtung' (eine Einzelmitglied-Szene pro Gerät + Zuweisung) und ein Abschnitt zur Fehlerbehebung; das Setup empfiehlt jetzt passives Polling."
-			},
-			"0.6.6": {
-				"en": "Fix: a controllable device's `on` state no longer reverts to read-only after it is switched. The live MQTT readback updated level/on through jsonExplorer, which re-applied the read-only default for `on` (state_attr) and clobbered the per-device writability; level/on values are now set directly so writability set at build/assignment time is preserved. A re-sync already healed it; this prevents it from happening.",
-				"de": "Fix: der `on`-State eines steuerbaren Geräts wird nach dem Schalten nicht mehr schreibgeschützt. Die Live-MQTT-Rückmeldung aktualisierte level/on über jsonExplorer, das die schreibgeschützte Vorgabe für `on` (state_attr) erneut anwendete und die geräteweise Schreibbarkeit überschrieb; level/on-Werte werden jetzt direkt gesetzt, sodass die zur Build-/Zuweisungszeit gesetzte Schreibbarkeit erhalten bleibt. Ein Re-Sync hat es bereits geheilt; dies verhindert das Auftreten."
-			},
-			"0.6.5": {
-				"en": "Control-scene assignment is now done per device in the Objects view (the device list builds itself), replacing the manual settings table. Each ambiguous device (several candidate scenes) gets a writable controlSceneSelect dropdown of its candidate scenes by name; choosing one assigns control live (no restart) and survives restarts. Single-candidate devices auto-map; info.devicesNeedingControlScene lists what still needs a choice.",
-				"de": "Die Steuerszenen-Zuordnung erfolgt jetzt pro Gerät in der Objektansicht (die Geräteliste baut sich selbst auf) und ersetzt die manuelle Einstellungstabelle. Jedes mehrdeutige Gerät (mehrere Kandidatenszenen) erhält ein beschreibbares controlSceneSelect-Dropdown seiner Kandidatenszenen nach Namen; eine Auswahl weist die Steuerung sofort zu (ohne Neustart) und übersteht Neustarts. Geräte mit einer Kandidatenszene werden automatisch zugeordnet; info.devicesNeedingControlScene listet, was noch eine Auswahl benötigt."
-			},
-			"0.6.4": {
-				"en": "Fix: the controlScene state of an unresolved (multiple-scene) or re-assigned device now clears to null instead of keeping a stale lowest-id value. The 'control scene not set' warning is now JSON (device name + deviceId + address tree key + candidate scenes as {sceneId, name}) and is also published to info.devicesNeedingControlScene, so it is readable and tells you exactly which sceneId to assign.",
-				"de": "Fix: der controlScene-State eines nicht zugeordneten (Mehrfach-Szenen-) oder neu zugewiesenen Geräts wird jetzt auf null zurückgesetzt, statt einen veralteten niedrigsten-ID-Wert zu behalten. Die Warnung 'Steuerszene nicht gesetzt' ist jetzt JSON (Gerätename + deviceId + address-Baum-Schlüssel + Kandidatenszenen als {sceneId, name}) und wird zusätzlich nach info.devicesNeedingControlScene geschrieben, sodass sie lesbar ist und genau zeigt, welche sceneId zuzuweisen ist."
-			},
-			"0.6.3": {
-				"en": "Per-device control scene mapping: a device with exactly one single-member scene is mapped automatically; a device with several is no longer silently mapped to the lowest id - it stays read-only and is listed in the log until you assign its control scene in the new admin 'Control mapping' tab (pick the scene by name; each scene controls one device). Resolves the ambiguous-control-scene devices.",
-				"de": "Steuerszene-Zuordnung pro Gerät: ein Gerät mit genau einer Einzelmitglied-Szene wird automatisch zugeordnet; ein Gerät mit mehreren wird nicht mehr stillschweigend der niedrigsten ID zugeordnet - es bleibt schreibgeschützt und wird im Log aufgeführt, bis du im neuen Admin-Tab 'Control mapping' seine Steuerszene zuweist (Szene per Name wählen; jede Szene steuert ein Gerät). Behebt die mehrdeutig gesteuerten Geräte."
-			},
-			"0.6.2": {
-				"en": "Diagnostic: any gateway feedback topic that is not yet mapped (e.g. the element_* family carrying battery and physical button events) is now logged once at info level, deduplicated by topic shape - so new payloads can be captured for mapping without raising the whole instance to debug. No behaviour change.",
-				"de": "Diagnose: jedes noch nicht zugeordnete Gateway-Feedback-Topic (z. B. die element_*-Familie mit Batterie- und Tastendruck-Ereignissen) wird nun einmalig auf Info-Ebene protokolliert, dedupliziert nach Topic-Form - damit neue Payloads für die Zuordnung erfasst werden können, ohne die gesamte Instanz auf Debug zu setzen. Keine Verhaltensänderung."
-			},
-			"0.6.1": {
-				"en": "Crash and error reporting via GlitchTip (Sentry protocol) using @iobroker/plugin-sentry. Uncaught exceptions are reported to the Oikos GlitchTip instance, tagged with the adapter version. Respects the ioBroker diagnostics setting and can be disabled per instance.",
-				"de": "Absturz- und Fehlerberichte über GlitchTip (Sentry-Protokoll) mittels @iobroker/plugin-sentry. Nicht abgefangene Ausnahmen werden an die Oikos-GlitchTip-Instanz gemeldet und mit der Adapterversion gekennzeichnet. Berücksichtigt die ioBroker-Diagnoseeinstellung und kann pro Instanz deaktiviert werden."
-			},
-			"0.6.0": {
-				"en": "Live MQTT state mapping onto the cloud catalog: device level/on, scene active, broadcast and device health (online/condition/battery/colour) now update in real time. Device states are now keyed by the shorter, readable BLE address instead of the uuid (stale uuid channels are cleaned up on sync).",
-				"de": "Live-MQTT-Statuszuordnung auf den Cloud-Katalog: Geräte-level/on, Szenen-active, Broadcast und Gerätezustand (online/condition/battery/colour) werden jetzt in Echtzeit aktualisiert. Gerätezustände werden jetzt über die kürzere, lesbarere BLE-Adresse statt der uuid adressiert (veraltete uuid-Kanäle werden bei der Synchronisierung entfernt)."
-			},
-			"0.5.0": {
-				"en": "Per-device control for unambiguous devices: a device that has exactly one control scene now exposes writable level/on - a write recalls that scene (no per-device set topic exists). Devices with no/multiple control scenes stay read-only.",
-				"de": "Gerätesteuerung für eindeutige Geräte: ein Gerät mit genau einer Steuerszene stellt jetzt beschreibbares level/on bereit - ein Schreibvorgang ruft diese Szene auf (es gibt kein Set-Topic pro Gerät). Geräte ohne/mit mehreren Steuerszenen bleiben schreibgeschützt."
-			},
-			"0.4.1": {
-				"en": "Docs: explain the data-source model - the cloud catalog has no live state, so live state and control need the MQTT gateway (or a Casambi developer API key, which can also serve live via the cloud).",
-				"de": "Doku: Erläuterung des Datenquellen-Modells - der Cloud-Katalog hat keinen Live-Status; Live-Status und Steuerung benötigen das MQTT-Gateway (oder einen Casambi-Entwickler-API-Schlüssel, der Live-Daten auch über die Cloud liefern kann)."
-			},
-			"0.4.0": {
-				"en": "Casambi cloud as the catalog source of truth (own network credentials, no developer API key): unit/scene/group names, members, capabilities. Builds a uuid-keyed device tree, derives each device's control scene, adds sync (start + interval + syncNow button + lastSync) and scene-coverage diagnostics (devices with no/multiple control scenes).",
-				"de": "Casambi-Cloud als maßgebliche Katalogquelle (eigene Netzwerk-Zugangsdaten, kein Entwickler-API-Schlüssel): Namen von Geräten/Szenen/Gruppen, Mitglieder, Fähigkeiten. Erstellt einen UUID-basierten Gerätebaum, ermittelt die Steuerszene jedes Geräts, ergänzt Synchronisierung (Start + Intervall + syncNow-Schalter + lastSync) und Szenen-Abdeckungsdiagnose (Geräte ohne/mit mehreren Steuerszenen)."
-			},
-			"0.3.3": {
-				"en": "Device states are now read-only (no per-device control over MQTT) and each device exposes a derived on/off state for downstream consumers. Adds an ADR for the state model and cloud-enrichment strategy.",
-				"de": "Gerätezustände sind jetzt schreibgeschützt (keine Einzelgerätesteuerung über MQTT) und jedes Gerät stellt einen abgeleiteten Ein/Aus-Zustand für nachgelagerte Verbraucher bereit. Fügt eine ADR für das Zustandsmodell und die Cloud-Anreicherungsstrategie hinzu."
-			},
-			"0.3.2": {
-				"en": "CI: test on Node.js 22.x/24.x and trim the test matrix to Ubuntu.",
-				"de": "CI: Test mit Node.js 22.x/24.x und Reduzierung der Testmatrix auf Ubuntu.",
-				"ru": "CI: тестирование на Node.js 22.x/24.x и сокращение тестовой матрицы до Ubuntu.",
-				"pt": "CI: testar no Node.js 22.x/24.x e reduzir a matriz de testes para Ubuntu.",
-				"nl": "CI: testen op Node.js 22.x/24.x en de testmatrix beperken tot Ubuntu.",
-				"fr": "CI : test sur Node.js 22.x/24.x et réduction de la matrice de test à Ubuntu.",
-				"it": "CI: test su Node.js 22.x/24.x e riduzione della matrice di test a Ubuntu.",
-				"es": "CI: prueba en Node.js 22.x/24.x y reducción de la matriz de pruebas a Ubuntu.",
-				"pl": "CI: testy na Node.js 22.x/24.x i ograniczenie macierzy testów do Ubuntu.",
-				"uk": "CI: тестування на Node.js 22.x/24.x і скорочення тестової матриці до Ubuntu.",
-				"zh-cn": "CI：在 Node.js 22.x/24.x 上测试，并将测试矩阵精简为 Ubuntu。"
-			},
-			"0.3.1": {
-				"en": "Leaner, correct object tree: placeholder scene/group/device slots are no longer created, indices are zero-padded for natural sorting, and a plain dimmer only gets the states it needs. Adds an opt-in cleanup of orphaned objects.",
-				"de": "Schlankerer, korrekter Objektbaum: Platzhalter-Slots für Szenen/Gruppen/Geräte werden nicht mehr angelegt, Indizes sind für natürliche Sortierung mit Nullen aufgefüllt, und ein einfacher Dimmer erhält nur die benötigten Zustände. Fügt eine optionale Bereinigung verwaister Objekte hinzu.",
-				"ru": "Более компактное и корректное дерево объектов: пустые слоты сцен/групп/устройств больше не создаются, индексы дополнены нулями для естественной сортировки, а обычный диммер получает только нужные состояния. Добавлена необязательная очистка осиротевших объектов.",
-				"pt": "Árvore de objetos mais enxuta e correta: slots de cena/grupo/dispositivo de espaço reservado não são mais criados, os índices são preenchidos com zeros para ordenação natural e um dimmer simples recebe apenas os estados necessários. Adiciona uma limpeza opcional de objetos órfãos.",
-				"nl": "Slankere, correcte objectstructuur: lege scène-/groep-/apparaatslots worden niet meer aangemaakt, indices zijn met nullen aangevuld voor natuurlijke sortering en een gewone dimmer krijgt alleen de benodigde statussen. Voegt een optionele opschoning van verweesde objecten toe.",
-				"fr": "Arborescence d'objets plus légère et correcte : les emplacements de scène/groupe/appareil de remplacement ne sont plus créés, les index sont complétés par des zéros pour un tri naturel et un simple variateur n'obtient que les états nécessaires. Ajoute un nettoyage facultatif des objets orphelins.",
-				"it": "Albero degli oggetti più snello e corretto: gli slot segnaposto di scene/gruppi/dispositivi non vengono più creati, gli indici sono riempiti con zeri per l'ordinamento naturale e un semplice dimmer ottiene solo gli stati necessari. Aggiunge una pulizia facoltativa degli oggetti orfani.",
-				"es": "Árbol de objetos más ligero y correcto: ya no se crean ranuras de marcador de posición de escena/grupo/dispositivo, los índices se rellenan con ceros para una ordenación natural y un atenuador simple solo obtiene los estados que necesita. Añade una limpieza opcional de objetos huérfanos.",
-				"pl": "Szczuplejsze, poprawne drzewo obiektów: zastępcze sloty scen/grup/urządzeń nie są już tworzone, indeksy są uzupełniane zerami dla naturalnego sortowania, a zwykły ściemniacz otrzymuje tylko potrzebne stany. Dodaje opcjonalne czyszczenie osieroconych obiektów.",
-				"uk": "Стрункіше, коректне дерево об'єктів: порожні слоти сцен/груп/пристроїв більше не створюються, індекси доповнено нулями для природного сортування, а звичайний димер отримує лише потрібні стани. Додано необов'язкове очищення осиротілих об'єктів.",
-				"zh-cn": "更精简、正确的对象树：不再创建占位的场景/组/设备槽位，索引以零填充以实现自然排序，普通调光器仅获得所需的状态。新增可选的孤立对象清理功能。"
-			},
-			"0.3.0": {
-				"en": "Added a Names config tab to assign friendly names to scenes, groups and devices (applied as channel names)",
-				"de": "Es wurde eine Konfigurationsregisterkarte „Namen“ hinzugefügt, um Szenen, Gruppen und Geräten benutzerfreundliche Namen zuzuweisen (die als Kanalnamen angewendet werden).",
-				"ru": "Добавлена ​​вкладка конфигурации «Имена», позволяющая назначать понятные имена сценам, группам и устройствам (применяются как имена каналов).",
-				"pt": "Adicionada uma guia de configuração de Nomes para atribuir nomes amigáveis ​​a cenas, grupos e dispositivos (aplicados como nomes de canais)",
-				"nl": "Een tabblad Namenconfiguratie toegevoegd om beschrijvende namen toe te wijzen aan scènes, groepen en apparaten (toegepast als kanaalnamen)",
-				"fr": "Ajout d'un onglet de configuration Noms pour attribuer des noms conviviaux aux scènes, groupes et appareils (appliqués comme noms de canaux)",
-				"it": "Aggiunta una scheda di configurazione Nomi per assegnare nomi descrittivi a scene, gruppi e dispositivi (applicati come nomi di canale)",
-				"es": "Se agregó una pestaña de configuración de Nombres para asignar nombres descriptivos a escenas, grupos y dispositivos (aplicados como nombres de canales)",
-				"pl": "Dodano zakładkę konfiguracyjną Nazwy, w której można przypisywać przyjazne nazwy scenom, grupom i urządzeniom (stosowane jako nazwy kanałów)",
-				"uk": "Додано вкладку конфігурації імен для призначення зрозумілих імен сценам, групам і пристроям (застосовуються як імена каналів)",
-				"zh-cn": "添加了名称配置选项卡，为场景、组和设备分配友好名称（用作通道名称）"
-			},
-			"0.2.0": {
-				"en": "Real gateway protocol: live scene/group/device state from poll_* feedback (level, colour, online, condition, battery) and whole-network broadcast control",
-				"de": "Echtes Gateway-Protokoll: Live-Szenen-/Gruppen-/Gerätestatus aus Poll_*-Feedback (Pegel, Farbe, Online, Zustand, Batterie) und Broadcast-Steuerung im gesamten Netzwerk",
-				"ru": "Протокол реального шлюза: состояние сцены/группы/устройства в реальном времени на основе обратной связи poll_* (уровень, цвет, онлайн, состояние, батарея) и управление трансляцией по всей сети",
-				"pt": "Protocolo de gateway real: cena ao vivo/grupo/estado do dispositivo a partir de feedback poll_* (nível, cor, on-line, condição, bateria) e controle de transmissão de toda a rede",
-				"nl": "Real gateway-protocol: live scène/groep/apparaatstatus via poll_* feedback (niveau, kleur, online, conditie, batterij) en uitzendingscontrole over het hele netwerk",
-				"fr": "Véritable protocole de passerelle : état en direct de la scène/du groupe/de l'appareil à partir des commentaires poll_* (niveau, couleur, en ligne, état, batterie) et contrôle de diffusion sur l'ensemble du réseau",
-				"it": "Protocollo gateway reale: stato di scena/gruppo/dispositivo live dal feedback poll_* (livello, colore, online, condizione, batteria) e controllo della trasmissione dell'intera rete",
-				"es": "Protocolo de puerta de enlace real: escena en vivo/grupo/estado del dispositivo a partir de comentarios de poll_* (nivel, color, en línea, condición, batería) y control de transmisión de toda la red",
-				"pl": "Prawdziwy protokół bramy: stan sceny/grupy/urządzenia na żywo na podstawie opinii poll_* (poziom, kolor, online, stan, bateria) i kontrola transmisji w całej sieci",
-				"uk": "Справжній протокол шлюзу: стан сцени/групи/пристрою в прямому ефірі на основі відгуків poll_* (рівень, колір, онлайн, стан, акумулятор) і керування трансляцією всієї мережі",
-				"zh-cn": "真实网关协议：poll_*反馈的现场场景/组/设备状态（电平、颜色、在线、状态、电池）和全网广播控制"
-			}
-		},
-		"titleLang": {
-			"en": "Casambi Lithernet",
-			"de": "Casambi Lithernet",
-			"ru": "Касамби Литернет",
-			"pt": "Casambi Liternet",
-			"nl": "Casambi Lithernet",
-			"fr": "Casambi Lithernet",
-			"it": "Casambi Lithernet",
-			"es": "Casambi Lithernet",
-			"pl": "Casambi Lithernet",
-			"uk": "Casambi Lithernet",
-			"zh-cn": "卡萨比·利瑟内特"
-		},
-		"desc": {
-			"en": "ioBroker Lithernet – Casambi allows communication by MQTT protocol with Lithernet–Casambi gateway enabling Ethernet-based integration of the Casambi Bluetooth system into the ioBroker environment. The gateway connects to the local network via Ethernet and communicates with Casambi devices over Bluetooth, allowing for control and monitoring of Casambi-enabled lighting systems through the ioBroker platform.",
-			"de": "ioBroker Lithernet – Casambi ermöglicht die Kommunikation über das MQTT-Protokoll mit dem Lithernet-Casambi-Gateway und ermöglicht die Ethernet-basierte Integration des Casambi-Bluetooth-Systems in die ioBroker-Umgebung. Das Gateway stellt über Ethernet eine Verbindung zum lokalen Netzwerk her und kommuniziert über Bluetooth mit Casambi-Geräten, was die Steuerung und Überwachung von Casambi-fähigen Beleuchtungssystemen über die ioBroker-Plattform ermöglicht.",
-			"ru": "ioBroker Lithernet – Casambi обеспечивает связь по протоколу MQTT со шлюзом Lithernet-Casambi, обеспечивая интеграцию системы Casambi Bluetooth на основе Ethernet в среду ioBroker. Шлюз подключается к локальной сети через Ethernet и обменивается данными с устройствами Casambi через Bluetooth, что позволяет управлять и контролировать системы освещения с поддержкой Casambi через платформу ioBroker.",
-			"pt": "ioBroker Lithernet – Casambi permite a comunicação pelo protocolo MQTT com o gateway Lithernet – Casambi permitindo a integração baseada em Ethernet do sistema Casambi Bluetooth no ambiente ioBroker. O gateway se conecta à rede local via Ethernet e se comunica com os dispositivos Casambi via Bluetooth, permitindo o controle e monitoramento dos sistemas de iluminação habilitados para Casambi por meio da plataforma ioBroker.",
-			"nl": "ioBroker Lithernet – Casambi maakt communicatie mogelijk via het MQTT-protocol met de Lithernet-Casambi-gateway, waardoor op Ethernet gebaseerde integratie van het Casambi Bluetooth-systeem in de ioBroker-omgeving mogelijk is. De gateway maakt via Ethernet verbinding met het lokale netwerk en communiceert met Casambi-apparaten via Bluetooth, waardoor bediening en monitoring van Casambi-compatibele verlichtingssystemen via het ioBroker-platform mogelijk is.",
-			"fr": "ioBroker Lithernet – Casambi permet la communication via le protocole MQTT avec la passerelle Lithernet-Casambi permettant l'intégration basée sur Ethernet du système Bluetooth Casambi dans l'environnement ioBroker. La passerelle se connecte au réseau local via Ethernet et communique avec les appareils Casambi via Bluetooth, permettant le contrôle et la surveillance des systèmes d'éclairage compatibles Casambi via la plateforme ioBroker.",
-			"it": "ioBroker Lithernet – Casambi consente la comunicazione tramite protocollo MQTT con il gateway Lithernet–Casambi consentendo l'integrazione basata su Ethernet del sistema Casambi Bluetooth nell'ambiente ioBroker. Il gateway si connette alla rete locale tramite Ethernet e comunica con i dispositivi Casambi tramite Bluetooth, consentendo il controllo e il monitoraggio dei sistemi di illuminazione abilitati Casambi attraverso la piattaforma ioBroker.",
-			"es": "ioBroker Lithernet – Casambi permite la comunicación mediante el protocolo MQTT con la puerta de enlace Lithernet – Casambi, lo que permite la integración basada en Ethernet del sistema Bluetooth Casambi en el entorno ioBroker. La puerta de enlace se conecta a la red local a través de Ethernet y se comunica con dispositivos Casambi a través de Bluetooth, lo que permite el control y monitoreo de los sistemas de iluminación habilitados para Casambi a través de la plataforma ioBroker.",
-			"pl": "ioBroker Lithernet – Casambi umożliwia komunikację protokołem MQTT z bramką Lithernet – Casambi, umożliwiając integrację systemu Casambi Bluetooth ze środowiskiem ioBroker w oparciu o Ethernet. Bramka łączy się z siecią lokalną poprzez Ethernet i komunikuje się z urządzeniami Casambi poprzez Bluetooth, umożliwiając sterowanie i monitorowanie systemów oświetleniowych obsługujących Casambi za pośrednictwem platformy ioBroker.",
-			"uk": "ioBroker Lithernet – Casambi забезпечує зв’язок за допомогою протоколу MQTT зі шлюзом Lithernet–Casambi, що забезпечує інтеграцію системи Bluetooth Casambi в середовище ioBroker на основі Ethernet. Шлюз підключається до локальної мережі через Ethernet і спілкується з пристроями Casambi через Bluetooth, дозволяючи контролювати та контролювати системи освітлення з підтримкою Casambi через платформу ioBroker.",
-			"zh-cn": "ioBroker Lithernet – Casambi 允许通过 MQTT 协议与 Lithernet –Casambi 网关进行通信，从而实现基于以太网的 Casambi 蓝牙系统集成到 ioBroker 环境中。该网关通过以太网连接到本地网络，并通过蓝牙与 Casambi 设备通信，从而可以通过 ioBroker 平台控制和监控支持 Casambi 的照明系统。"
-		},
-		"authors": [
-			"DutchmanNL <oss@drozmotix.eu>"
-		],
-		"keywords": [
-			"casambi",
-			"lithernet",
-			"mqtt",
-			"lighting",
-			"bluetooth",
-			"automation",
-			"IoT"
-		],
-		"licenseInformation": {
-			"type": "free",
-			"license": "MIT"
-		},
-		"platform": "Javascript/Node.js",
-		"icon": "casambi-lithernet.png",
-		"enabled": true,
-		"extIcon": "https://raw.githubusercontent.com/DrozmotiX/ioBroker.casambi-lithernet/main/admin/casambi-lithernet.png",
-		"readme": "https://github.com/DrozmotiX/ioBroker.casambi-lithernet/blob/main/README.md",
-		"loglevel": "info",
-		"tier": 3,
-		"mode": "daemon",
-		"type": "lighting",
-		"compact": true,
-		"connectionType": "local",
-		"dataSource": "push",
-		"adminUI": {
-			"config": "json"
-		},
-		"dependencies": [
-			{
-				"js-controller": ">=6.0.11"
-			}
-		],
-		"globalDependencies": [
-			{
-				"admin": ">=7.0.23"
-			}
-		],
-		"plugins": {
-			"sentry": {
-				"dsn": "https://1b295992b8f84300b7057e7f647713b0@glitchtip.drozmotix.nl/4"
-			}
-		}
-	},
-	"encryptedNative": [
-		"password",
-		"cloudPassword"
-	],
-	"protectedNative": [
-		"password",
-		"cloudPassword"
-	],
-	"native": {
-		"bind": "0.0.0.0",
-		"port": 3791,
-		"gatewayId": "0",
-		"username": "",
-		"password": "",
-		"defaultDuration": 0,
-		"levelScale": "percent",
-		"buttonCount": 0,
-		"removeOrphans": false,
-		"orphanScanDelay": 120,
-		"sceneNames": [],
-		"groupNames": [],
-		"deviceNames": [],
-		"cloudEnabled": true,
-		"cloudUuid": "",
-		"cloudPassword": "",
-		"cloudSyncInterval": 60,
-		"cloudDeviceRange": "0-*",
-		"cloudSceneRange": "0-*"
-	},
-	"objects": [],
-	"instanceObjects": [
-		{
-			"_id": "info",
-			"type": "channel",
-			"common": {
-				"name": "Information"
-			},
-			"native": {}
-		},
-		{
-			"_id": "info.connection",
-			"type": "state",
-			"common": {
-				"role": "indicator.connected",
-				"name": "Device or service connected",
-				"type": "boolean",
-				"read": true,
-				"write": false,
-				"def": false
-			},
-			"native": {}
-		}
-	]
+  "common": {
+    "name": "casambi-lithernet",
+    "version": "0.8.0",
+    "news": {
+      "0.8.0": {
+        "en": "Documents a working-as-designed behaviour: a device can only be mapped to a single-member control scene, so attempts to assign it to a multi-member scene are intentionally rejected. Adds a worked example and the resolution to the troubleshooting guide.\n\n* Docs: troubleshooting now documents the known issue that a device can't be assigned to a multi-member scene (control scenes must be single-member), with a worked example and the resolution",
+        "de": "Dokumentiert das vorgesehene Verhalten: Ein Gerät kann nur einer Steuerungsszene mit einem Element zugeordnet werden; Versuche, es einer Szene mit mehreren Elementen zuzuordnen, werden daher absichtlich abgelehnt. Fügt dem Leitfaden zur Fehlerbehebung ein Anwendungsbeispiel und dessen Lösung hinzu.\n\n* Dokumentation: Die Fehlerbehebung dokumentiert nun das bekannte Problem, dass ein Gerät keiner Szene mit mehreren Mitgliedern zugewiesen werden kann (Steuerungsszenen müssen Einzelmitglieder enthalten), mit einem Anwendungsbeispiel und der Lösung.",
+        "ru": "Описано поведение, соответствующее задуманному: устройство может быть назначено только для сцены управления с одним участником, поэтому попытки назначить его для сцены с несколькими участниками намеренно отклоняются. В руководство по устранению неполадок добавлен пример работы и решение проблемы.\n\n* В документации по устранению неполадок теперь описывается известная проблема, заключающаяся в невозможности назначения устройства многопользовательской сцене (сцены управления должны быть однопользовательскими), с примером решения и описанием способа устранения.",
+        "pt": "Documenta o comportamento esperado: um dispositivo só pode ser mapeado para uma cena de controle com um único membro; portanto, tentativas de atribuí-lo a uma cena com vários membros são intencionalmente rejeitadas. Adiciona um exemplo prático e a solução ao guia de solução de problemas.\n\n* Documentação: a seção de solução de problemas agora documenta o problema conhecido de um dispositivo não poder ser atribuído a uma cena com vários membros (as cenas de controle devem ter um único membro), com um exemplo prático e a solução.",
+        "nl": "Dit document beschrijft een beoogd gedrag: een apparaat kan alleen worden toegewezen aan een besturingsscène met één lid, waardoor pogingen om het aan een scène met meerdere leden toe te wijzen opzettelijk worden afgewezen. Een uitgewerkt voorbeeld en de oplossing worden toegevoegd aan de handleiding voor probleemoplossing.\n\n* Documentatie: in de handleiding voor probleemoplossing wordt nu het bekende probleem beschreven dat een apparaat niet kan worden toegewezen aan een scène met meerdere leden (besturingsscènes moeten scènes met één lid bevatten), met een uitgewerkt voorbeeld en de oplossing.",
+        "fr": "Ce document décrit le comportement normal : un périphérique ne peut être associé qu’à une scène de contrôle à un seul membre ; toute tentative d’association à une scène à plusieurs membres est donc intentionnellement rejetée. Il ajoute un exemple concret et sa solution au guide de dépannage.\n\n* Documentation : la section dépannage documente désormais le problème connu selon lequel un appareil ne peut pas être affecté à une scène à plusieurs membres (les scènes de contrôle doivent être à un seul membre), avec un exemple concret et sa solution.",
+        "it": "Documenta un comportamento previsto: un dispositivo può essere mappato solo a una scena di controllo a membro singolo, pertanto i tentativi di assegnarlo a una scena a più membri vengono intenzionalmente rifiutati. Aggiunge un esempio pratico e la relativa soluzione alla guida alla risoluzione dei problemi.\n\n* Documentazione: la sezione sulla risoluzione dei problemi ora documenta il problema noto per cui un dispositivo non può essere assegnato a una scena multi-membro (le scene di controllo devono essere a membro singolo), con un esempio pratico e la soluzione",
+        "es": "Documenta el comportamiento previsto: un dispositivo solo puede asignarse a una escena de control de un solo miembro, por lo que los intentos de asignarlo a una escena de varios miembros se rechazan intencionadamente. Añade un ejemplo práctico y la solución a la guía de solución de problemas.\n\n* Documentación: la sección de solución de problemas ahora documenta el problema conocido de que un dispositivo no se puede asignar a una escena con varios miembros (las escenas de control deben ser de un solo miembro), con un ejemplo práctico y la solución.",
+        "pl": "Dokumentuje zachowanie zgodne z założeniami: urządzenie można zmapować tylko do sceny sterowania z jednym elementem, więc próby przypisania go do sceny z wieloma elementami są celowo odrzucane. Dodaje działający przykład i rozwiązanie do przewodnika rozwiązywania problemów.\n\n* Dokumentacja: rozwiązywanie problemów dokumentuje teraz znany problem, polegający na tym, że urządzenia nie można przypisać do sceny wieloczłonowej (sceny sterowania muszą być jednoczłonowe), wraz z rozwiązanym przykładem i rozwiązaniem",
+        "uk": "Документує поведінку, що працює за проектом: пристрій можна призначити лише одночленній сцені керування, тому спроби призначити його багаточленній сцені навмисно відхиляються. Додає робочий приклад та рішення до посібника з усунення несправностей.\n\n* Документація: у розділі усунення несправностей тепер задокументовано відому проблему, через яку пристрій не можна призначити багаточленній сцені (сцени керування мають бути одночленними), з наведеним прикладом та рішенням.",
+        "zh-cn": "记录了符合设计预期的行为：设备只能映射到单成员控制场景，因此尝试将其分配给多成员场景的操作将被有意拒绝。在故障排除指南中添加了一个示例和解决方案。\n\n* 文档：故障排除部分现在记录了已知问题，即设备无法分配给多成员场景（控制场景必须是单成员场景），并提供了一个示例和解决方案。"
+      },
+      "0.7.0": {
+        "en": "Stable release of the on/off-correctness work: no flip when switching, confirmed-only state that always reflects the device (with restore-on-timeout), a per-device off that wins over an active foreign/button scene, and correct on/off for relay/switch units (state via the active scene, not level). Documents the Casambi network setup convention.",
+        "de": "Stabiles Release der Ein/Aus-Korrektheit: kein Flackern beim Schalten, ausschliesslich bestaetigter Zustand, der immer das Geraet widerspiegelt (mit Wiederherstellung bei Zeitueberschreitung), ein geraetebezogenes Aus, das sich gegen eine aktive Fremd-/Tasten-Szene durchsetzt, und korrektes Ein/Aus fuer Relais-/Schalter-Geraete (Zustand ueber die aktive Szene, nicht level). Dokumentiert die Casambi-Netzwerk-Einrichtungskonvention."
+      },
+      "0.6.12-beta.3": {
+        "en": "Fix: relay/switch units now show on/off correctly. They keep level at 0 and signal state only through the scene they follow, so on is now derived from level OR an active scene (on = level>0 or scene>0). Dimmers are unchanged.",
+        "de": "Fix: Relais-/Schalter-Geraete zeigen Ein/Aus jetzt korrekt an. Sie halten level auf 0 und signalisieren den Zustand nur ueber die Szene, der sie folgen; on wird daher jetzt aus level ODER einer aktiven Szene abgeleitet (on = level>0 oder scene>0). Dimmer bleiben unveraendert."
+      },
+      "0.6.12-beta.2": {
+        "en": "Fix: turning a lamp off from the adapter now works even when a button's scene is active (override-then-zero), and the device state always reflects the real value - if a command produces no readback, the last gateway-confirmed on/level is restored instead of leaving an assumed value.",
+        "de": "Fix: Das Ausschalten einer Leuchte ueber den Adapter funktioniert jetzt auch, wenn eine Tasten-Szene aktiv ist (Override-dann-Null), und der Geraetezustand spiegelt immer den echten Wert wider - liefert ein Befehl keine Rueckmeldung, wird der zuletzt vom Gateway bestaetigte on/level wiederhergestellt statt einen angenommenen Wert zu zeigen."
+      },
+      "0.6.12-beta.1": {
+        "en": "Fix: completes the on/off flip fix. A per-device command settle window now ignores the gateway's pre-change re-polls (which report the old level ~1s after a recall) until the command is reflected; if it never takes effect, the true state is accepted so a failed switch reverts instead of showing an assumed value.",
+        "de": "Fix: vervollstaendigt die Behebung des Ein/Aus-Flackerns. Ein Befehls-Wartefenster pro Geraet ignoriert jetzt die Vorab-Abfragen des Gateways (die ~1s nach einem Aufruf noch den alten Wert melden), bis der Befehl wirksam wird; bleibt er aus, wird der echte Zustand uebernommen, sodass ein fehlgeschlagener Schaltbefehl zurueckspringt statt einen angenommenen Wert zu zeigen."
+      },
+      "0.6.12-beta.0": {
+        "en": "Fix: switching a light no longer briefly shows the old on/off value before the new one. The gateway emits a stale-then-fresh level pair on every scene recall; device level/on are now coalesced over a short window and acked only from confirmed gateway readback, never optimistically assumed.",
+        "de": "Fix: Beim Schalten eines Lichts wird nicht mehr kurz der alte Ein/Aus-Wert vor dem neuen angezeigt. Das Gateway sendet bei jedem Szenenaufruf ein altes-dann-neues Level-Paar; Gerät level/on werden jetzt ueber ein kurzes Fenster zusammengefasst und nur aus bestaetigtem Gateway-Readback quittiert, nie optimistisch angenommen."
+      },
+      "0.6.11": {
+        "en": "Docs: how to find your short Network UUID (not the app's 128-bit iBeacon UUID, which makes the cloud sync 404). Ship the read-only getinfo.py in the casambi-bt playground — it connects over Bluetooth with your network password and prints the UUID + network structure, no lights touched.",
+        "de": "Doku: wie man die kurze Netzwerk-UUID findet (nicht die 128-Bit-iBeacon-UUID der App, die zum 404 bei der Cloud-Synchronisierung führt). Das schreibgeschützte getinfo.py im casambi-bt-Playground wird mitgeliefert — es verbindet sich per Bluetooth mit dem Netzwerkpasswort und gibt die UUID + Netzwerkstruktur aus, ohne Lichter zu verändern."
+      }
+    },
+    "titleLang": {
+      "en": "Casambi Lithernet",
+      "de": "Casambi Lithernet",
+      "ru": "Касамби Литернет",
+      "pt": "Casambi Liternet",
+      "nl": "Casambi Lithernet",
+      "fr": "Casambi Lithernet",
+      "it": "Casambi Lithernet",
+      "es": "Casambi Lithernet",
+      "pl": "Casambi Lithernet",
+      "uk": "Casambi Lithernet",
+      "zh-cn": "卡萨比·利瑟内特"
+    },
+    "desc": {
+      "en": "ioBroker Lithernet – Casambi allows communication by MQTT protocol with Lithernet–Casambi gateway enabling Ethernet-based integration of the Casambi Bluetooth system into the ioBroker environment. The gateway connects to the local network via Ethernet and communicates with Casambi devices over Bluetooth, allowing for control and monitoring of Casambi-enabled lighting systems through the ioBroker platform.",
+      "de": "ioBroker Lithernet – Casambi ermöglicht die Kommunikation über das MQTT-Protokoll mit dem Lithernet-Casambi-Gateway und ermöglicht die Ethernet-basierte Integration des Casambi-Bluetooth-Systems in die ioBroker-Umgebung. Das Gateway stellt über Ethernet eine Verbindung zum lokalen Netzwerk her und kommuniziert über Bluetooth mit Casambi-Geräten, was die Steuerung und Überwachung von Casambi-fähigen Beleuchtungssystemen über die ioBroker-Plattform ermöglicht.",
+      "ru": "ioBroker Lithernet – Casambi обеспечивает связь по протоколу MQTT со шлюзом Lithernet-Casambi, обеспечивая интеграцию системы Casambi Bluetooth на основе Ethernet в среду ioBroker. Шлюз подключается к локальной сети через Ethernet и обменивается данными с устройствами Casambi через Bluetooth, что позволяет управлять и контролировать системы освещения с поддержкой Casambi через платформу ioBroker.",
+      "pt": "ioBroker Lithernet – Casambi permite a comunicação pelo protocolo MQTT com o gateway Lithernet – Casambi permitindo a integração baseada em Ethernet do sistema Casambi Bluetooth no ambiente ioBroker. O gateway se conecta à rede local via Ethernet e se comunica com os dispositivos Casambi via Bluetooth, permitindo o controle e monitoramento dos sistemas de iluminação habilitados para Casambi por meio da plataforma ioBroker.",
+      "nl": "ioBroker Lithernet – Casambi maakt communicatie mogelijk via het MQTT-protocol met de Lithernet-Casambi-gateway, waardoor op Ethernet gebaseerde integratie van het Casambi Bluetooth-systeem in de ioBroker-omgeving mogelijk is. De gateway maakt via Ethernet verbinding met het lokale netwerk en communiceert met Casambi-apparaten via Bluetooth, waardoor bediening en monitoring van Casambi-compatibele verlichtingssystemen via het ioBroker-platform mogelijk is.",
+      "fr": "ioBroker Lithernet – Casambi permet la communication via le protocole MQTT avec la passerelle Lithernet-Casambi permettant l'intégration basée sur Ethernet du système Bluetooth Casambi dans l'environnement ioBroker. La passerelle se connecte au réseau local via Ethernet et communique avec les appareils Casambi via Bluetooth, permettant le contrôle et la surveillance des systèmes d'éclairage compatibles Casambi via la plateforme ioBroker.",
+      "it": "ioBroker Lithernet – Casambi consente la comunicazione tramite protocollo MQTT con il gateway Lithernet–Casambi consentendo l'integrazione basata su Ethernet del sistema Casambi Bluetooth nell'ambiente ioBroker. Il gateway si connette alla rete locale tramite Ethernet e comunica con i dispositivi Casambi tramite Bluetooth, consentendo il controllo e il monitoraggio dei sistemi di illuminazione abilitati Casambi attraverso la piattaforma ioBroker.",
+      "es": "ioBroker Lithernet – Casambi permite la comunicación mediante el protocolo MQTT con la puerta de enlace Lithernet – Casambi, lo que permite la integración basada en Ethernet del sistema Bluetooth Casambi en el entorno ioBroker. La puerta de enlace se conecta a la red local a través de Ethernet y se comunica con dispositivos Casambi a través de Bluetooth, lo que permite el control y monitoreo de los sistemas de iluminación habilitados para Casambi a través de la plataforma ioBroker.",
+      "pl": "ioBroker Lithernet – Casambi umożliwia komunikację protokołem MQTT z bramką Lithernet – Casambi, umożliwiając integrację systemu Casambi Bluetooth ze środowiskiem ioBroker w oparciu o Ethernet. Bramka łączy się z siecią lokalną poprzez Ethernet i komunikuje się z urządzeniami Casambi poprzez Bluetooth, umożliwiając sterowanie i monitorowanie systemów oświetleniowych obsługujących Casambi za pośrednictwem platformy ioBroker.",
+      "uk": "ioBroker Lithernet – Casambi забезпечує зв’язок за допомогою протоколу MQTT зі шлюзом Lithernet–Casambi, що забезпечує інтеграцію системи Bluetooth Casambi в середовище ioBroker на основі Ethernet. Шлюз підключається до локальної мережі через Ethernet і спілкується з пристроями Casambi через Bluetooth, дозволяючи контролювати та контролювати системи освітлення з підтримкою Casambi через платформу ioBroker.",
+      "zh-cn": "ioBroker Lithernet – Casambi 允许通过 MQTT 协议与 Lithernet –Casambi 网关进行通信，从而实现基于以太网的 Casambi 蓝牙系统集成到 ioBroker 环境中。该网关通过以太网连接到本地网络，并通过蓝牙与 Casambi 设备通信，从而可以通过 ioBroker 平台控制和监控支持 Casambi 的照明系统。"
+    },
+    "authors": [
+      "DutchmanNL <oss@drozmotix.eu>"
+    ],
+    "keywords": [
+      "casambi",
+      "lithernet",
+      "mqtt",
+      "lighting",
+      "bluetooth",
+      "automation",
+      "IoT"
+    ],
+    "licenseInformation": {
+      "type": "free",
+      "license": "MIT"
+    },
+    "platform": "Javascript/Node.js",
+    "icon": "casambi-lithernet.png",
+    "enabled": true,
+    "extIcon": "https://raw.githubusercontent.com/DrozmotiX/ioBroker.casambi-lithernet/main/admin/casambi-lithernet.png",
+    "readme": "https://github.com/DrozmotiX/ioBroker.casambi-lithernet/blob/main/README.md",
+    "loglevel": "info",
+    "tier": 3,
+    "mode": "daemon",
+    "type": "lighting",
+    "compact": true,
+    "connectionType": "local",
+    "dataSource": "push",
+    "adminUI": {
+      "config": "json"
+    },
+    "dependencies": [
+      {
+        "js-controller": ">=6.0.11"
+      }
+    ],
+    "globalDependencies": [
+      {
+        "admin": ">=7.0.23"
+      }
+    ],
+    "plugins": {
+      "sentry": {
+        "dsn": "https://1b295992b8f84300b7057e7f647713b0@glitchtip.drozmotix.nl/4"
+      }
+    }
+  },
+  "encryptedNative": [
+    "password",
+    "cloudPassword"
+  ],
+  "protectedNative": [
+    "password",
+    "cloudPassword"
+  ],
+  "native": {
+    "bind": "0.0.0.0",
+    "port": 3791,
+    "gatewayId": "0",
+    "username": "",
+    "password": "",
+    "defaultDuration": 0,
+    "levelScale": "percent",
+    "buttonCount": 0,
+    "removeOrphans": false,
+    "orphanScanDelay": 120,
+    "sceneNames": [],
+    "groupNames": [],
+    "deviceNames": [],
+    "cloudEnabled": true,
+    "cloudUuid": "",
+    "cloudPassword": "",
+    "cloudSyncInterval": 60,
+    "cloudDeviceRange": "0-*",
+    "cloudSceneRange": "0-*"
+  },
+  "objects": [],
+  "instanceObjects": [
+    {
+      "_id": "info",
+      "type": "channel",
+      "common": {
+        "name": "Information"
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.connection",
+      "type": "state",
+      "common": {
+        "role": "indicator.connected",
+        "name": "Device or service connected",
+        "type": "boolean",
+        "read": true,
+        "write": false,
+        "def": false
+      },
+      "native": {}
+    }
+  ]
 }

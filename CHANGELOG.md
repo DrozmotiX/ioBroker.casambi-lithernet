@@ -6,6 +6,12 @@ All notable changes to this adapter are documented here.
 	Placeholder for the next version (at the beginning of the line):
 	## **WORK IN PROGRESS**
 -->
+## 0.8.0 (2026-06-26) - Document multi-member scene control as a known issue
+
+Documents a working-as-designed behaviour: a device can only be mapped to a single-member control scene, so attempts to assign it to a multi-member scene are intentionally rejected. Adds a worked example and the resolution to the troubleshooting guide.
+
+* (DutchmanNL) Docs: troubleshooting now documents the known issue that a device can't be assigned to a multi-member scene (control scenes must be single-member), with a worked example and the resolution
+
 ## 0.7.0 (2026-06-26) - Stable: correct, always-synced device on/off
 
 First stable release of the on/off-correctness work that landed across the `0.6.12-beta.*` series, validated live on a customer gateway: no on/off **flip** on a switch, **confirmed-only** state that always reflects the device (never an assumed value), a per-device **off that wins over a foreign/button scene**, and correct on/off for **relay/switch units** (which signal state via the active scene, not `level`). Also documents the **Casambi network setup convention**.
