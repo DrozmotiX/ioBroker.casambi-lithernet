@@ -6,6 +6,19 @@ All notable changes to this adapter are documented here.
 	Placeholder for the next version (at the beginning of the line):
 	## **WORK IN PROGRESS**
 -->
+## 0.6.12-beta.1 (2026-06-26) - Command settle window (completes the on/off flip fix)
+
+Completes the on/off flip fix. The 0.6.12-beta.0 debounce alone wasn't enough: the gateway re-polls every load continuously, so a **routine poll reports the still-old level ~0.5–1 s after a recall**, before the physical change — and that pre-change reading was written, re-introducing the flip. A per-device **command settle window** now ignores readbacks that still contradict the commanded on/off until the gateway reflects it; if the window elapses (command lost / didn't take), the true state is accepted — so a failed switch reverts to its real value instead of showing an assumed one.
+
+* (DutchmanNL) Fix: on/off flip on a switch is now fully suppressed — a **command settle window** (`commandSettleMs`, default 2500 ms) drops the gateway's pre-change re-polls until it reflects the command. Live MQTT capture confirmed the contradicting reading is a separate poll cycle ~1 s after the recall, which the 300 ms readback debounce could not catch
+* (DutchmanNL) When the settle window elapses without the command taking effect, the real gateway state is accepted (`ack:true`) — a lost/failed switch reverts to its true on/off rather than sticking on an assumed value (also addresses the occasional "shows on but really off")
+
+```detail
+- lib/casambi.js: new pure `settleReadback(pending, expect, now)` -> 'drop'|'accept' (unit-tested)
+- main.js: `deviceExpect[key]={on,until}` armed on a device command; `flushDeviceReadback` consults `settleReadback`; cleared on unload + cloud rebuild
+- builds on 0.6.12-beta.0 (debounce + confirmed-only ack); debounce still coalesces the ~10ms stale→fresh pair for non-command (external) changes
+```
+
 ## 0.6.12-beta.0 (2026-06-26) - Confirmed-only device state + readback debounce (no on/off flip)
 
 Fixes the on/off **state flip** on a switch: turning a light on/off briefly showed the *old* value before the *new* one. The gateway emits a stale-then-fresh level pair (~10 ms apart) on every scene recall; the adapter wrote both, and also optimistically acked the command. Device `level`/`on` are now **coalesced over a short window and only ever acked from confirmed gateway readback — never assumed**.
