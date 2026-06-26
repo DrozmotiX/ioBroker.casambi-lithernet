@@ -6,6 +6,20 @@ All notable changes to this adapter are documented here.
 	Placeholder for the next version (at the beginning of the line):
 	## **WORK IN PROGRESS**
 -->
+## 0.6.12-beta.0 (2026-06-26) - Confirmed-only device state + readback debounce (no on/off flip)
+
+Fixes the on/off **state flip** on a switch: turning a light on/off briefly showed the *old* value before the *new* one. The gateway emits a stale-then-fresh level pair (~10 ms apart) on every scene recall; the adapter wrote both, and also optimistically acked the command. Device `level`/`on` are now **coalesced over a short window and only ever acked from confirmed gateway readback — never assumed**.
+
+* (DutchmanNL) Fix: device `level`/`on` readbacks are **debounced** (`readbackDebounceMs`, default 300 ms) so the gateway's stale→fresh recall pair collapses to the settled value — no more old→new flip in the UI when switching a light
+* (DutchmanNL) Fix: removed the **optimistic ack** on device control (and on broadcast/scene/group level writes) — these are now confirmed (`ack:true`) only by the real `poll_device`/`poll_*` readback, matching the documented control→confirm model. Injected sensors and virtual buttons (no gateway readback) still self-ack
+* (DutchmanNL) A control command invalidates the device's confirmed snapshot so the next readback re-confirms even when the value is unchanged (commanding a load already in that state)
+
+```detail
+- lib/casambi.js: new pure `diffConfirmedReadback(pending, confirmed)` (writes only changed fields; unit-tested)
+- main.js: `queueDeviceReadback`/`flushDeviceReadback` debounce in `routeLiveFeedback`; `deviceConfirmed` snapshot; ack removed from the device-control and generic publish paths (kept for sensors/buttons); timers cleared on unload + cloud rebuild
+- The legacy (non-cloud) MQTT discovery path is unchanged; the fix targets the live cloud-mapped path used in production
+```
+
 ## 0.6.11 (2026-06-25)
 * (DutchmanNL) Docs: how to find your short **Network UUID** (it is **not** the app's 128-bit iBeacon UUID — entering that makes the cloud sync 404). Ship the read-only `getinfo.py` in the [casambi-bt playground](docs/casambi-bt-playground/) — it connects over Bluetooth with your network password and prints the UUID + network structure, **no lights touched**
 
