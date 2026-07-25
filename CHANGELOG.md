@@ -6,6 +6,10 @@ All notable changes to this adapter are documented here.
 	Placeholder for the next version (at the beginning of the line):
 	## **WORK IN PROGRESS**
 -->
+## 0.8.1 (2026-07-25) - chore(security): SHA-pin CI actions (B-32)
+
+- **ci(security):** SHA-pin third-party GitHub Actions to full commit SHAs in this repo's workflows (baseline **B-32** supply-chain integrity; closes SECURITY-REVIEW-2026-07 M8).
+
 ## 0.8.0 (2026-06-26) - Document multi-member scene control as a known issue
 
 Documents a working-as-designed behaviour: a device can only be mapped to a single-member control scene, so attempts to assign it to a multi-member scene are intentionally rejected. Adds a worked example and the resolution to the troubleshooting guide.
