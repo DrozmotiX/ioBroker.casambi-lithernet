@@ -9,6 +9,8 @@ All notable changes to this adapter are documented here.
 ## **WORK IN PROGRESS**
 
 * (DutchmanNL) Maintenance: raise Node.js to 22, modernise CI and release tooling, update dependencies, resolve repository checker findings
+* (DutchmanNL) Dependencies updated to current versions
+* (DutchmanNL) Embedded MQTT broker upgraded to aedes 1.x (now loaded via dynamic import, broker creation is asynchronous) - no behaviour change for the gateway connection
 
 ## 0.8.1 (2026-07-25) - chore(security): SHA-pin CI actions (B-32)
 
