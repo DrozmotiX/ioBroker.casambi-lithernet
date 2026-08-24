@@ -6,6 +6,10 @@ All notable changes to this adapter are documented here.
 	Placeholder for the next version (at the beginning of the line):
 	## **WORK IN PROGRESS**
 -->
+## **WORK IN PROGRESS**
+
+* (DutchmanNL) Maintenance: raise Node.js to 22, modernise CI and release tooling, update dependencies, resolve repository checker findings
+
 ## 0.8.1 (2026-07-25) - chore(security): SHA-pin CI actions (B-32)
 
 - **ci(security):** SHA-pin third-party GitHub Actions to full commit SHAs in this repo's workflows (baseline **B-32** supply-chain integrity; closes SECURITY-REVIEW-2026-07 M8).
