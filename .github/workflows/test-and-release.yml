@@ -58,7 +58,7 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
-      - uses: ioBroker/testing-action-adapter@470171e892446829e39bac4d5694c90307830d00 # v1
+      - uses: ioBroker/testing-action-adapter@d4c684a25df5a2a75d57a967fb19630eb4086f46 # v1
         with:
           node-version: ${{ matrix.node-version }}
           os: ${{ matrix.os }}
