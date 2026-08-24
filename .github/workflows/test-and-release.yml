@@ -87,7 +87,7 @@ jobs:
       id-token: write
 
     steps:
-      - uses: ioBroker/testing-action-deploy@aec8d427d5ec1aa14e722174d0f592462540c1c3 # v1
+      - uses: ioBroker/testing-action-deploy@391ef53ff5d56e941551ab13a9c86468f2ca25b5 # v1
         with:
           node-version: '24.x'
           # Uncomment the following line if your adapter cannot be installed using 'npm ci'
