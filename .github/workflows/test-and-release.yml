@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: ioBroker/testing-action-check@e95660177eea35742eb207b911b1f38071bd6c90 # v2
+      - uses: ioBroker/testing-action-check@d439029c6e049a91d786e9921720f569323e8b11 # v2
         with:
           node-version: '24.x'
           # Uncomment the following line if your adapter cannot be installed using 'npm ci'
